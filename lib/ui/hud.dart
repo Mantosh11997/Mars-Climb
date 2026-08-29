@@ -153,16 +153,22 @@ class _Readout extends StatelessWidget {
           ),
           if (progress != null) ...[
             const SizedBox(height: 6),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(3),
-              child: Stack(
-                children: [
-                  Container(height: 4, color: const Color(0x33000000)),
-                  FractionallySizedBox(
-                    widthFactor: progress!.clamp(0.0, 1.0),
-                    child: Container(height: 4, color: GameConfig.accent),
-                  ),
-                ],
+            // The width MUST be bounded. This panel sits in a Row without
+            // Expanded, so it is laid out with unbounded width - and a
+            // FractionallySizedBox under an infinite constraint throws.
+            SizedBox(
+              width: _progressBarWidth,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(3),
+                child: Stack(
+                  children: [
+                    Container(height: 4, color: const Color(0x33000000)),
+                    FractionallySizedBox(
+                      widthFactor: progress!.clamp(0.0, 1.0),
+                      child: Container(height: 4, color: GameConfig.accent),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -190,6 +196,9 @@ class _Panel extends StatelessWidget {
     );
   }
 }
+
+/// Fixed so the bar has a bounded width in an unbounded Row slot.
+const double _progressBarWidth = 132;
 
 const _labelStyle = TextStyle(
   color: Colors.white70,

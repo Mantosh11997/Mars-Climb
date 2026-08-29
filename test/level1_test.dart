@@ -78,6 +78,36 @@ void main() {
             'run-up, and never strand a rover that stops on a hill');
   });
 
+  test('no chunk has vertices too close for a Forge2D chain', () {
+    // ChainShape.createChain THROWS on vertices closer than forge2d's
+    // linear slop, inside BodyComponent.onLoad - so the chunk silently
+    // never mounts and the world gets a hole. This is exactly what made
+    // the terrain stop dead at x=42 m.
+    const chunkWidth = GameConfig.terrainChunkWidth;
+    final maxIndex = (level1.worldEndX / chunkWidth).ceil() - 1;
+
+    var worst = double.infinity;
+    var worstAt = '';
+    for (var i = 0; i <= maxIndex; i++) {
+      final pts = gen.sample(i * chunkWidth, (i + 1) * chunkWidth);
+      for (var k = 1; k < pts.length; k++) {
+        final d = (pts[k] - pts[k - 1]).length;
+        if (d < worst) {
+          worst = d;
+          worstAt = 'chunk $i vertex $k (x=${pts[k].x.toStringAsFixed(3)})';
+        }
+      }
+    }
+
+    // ignore: avoid_print
+    print('closest pair of chain vertices: '
+        '${worst.toStringAsFixed(4)} m at $worstAt');
+
+    expect(worst, greaterThan(TerrainGenerator.minVertexSeparation * 0.9),
+        reason: 'vertices this close make createChain throw, which silently '
+            'drops the whole chunk out of the world');
+  });
+
   test('course profile', () {
     const rows = 15;
     const cols = 110;

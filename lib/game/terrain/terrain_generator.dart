@@ -52,14 +52,30 @@ class TerrainGenerator {
   /// decide when the rover has fallen out of the world.
   double get lowestGroundY => GameConfig.terrainBaseY + level.amplitude;
 
+  /// Forge2D rejects a chain whose adjacent vertices are closer than its
+  /// linear slop (0.005 m), and `createChain` throws rather than skipping
+  /// them. A throw here happens inside `BodyComponent.onLoad`, so the
+  /// chunk silently never mounts and the world gets a hole in it.
+  ///
+  /// This margin is 10x that limit.
+  static const double minVertexSeparation = 0.05;
+
   /// Sample the surface across [fromX, toX] inclusive, at the configured
   /// spacing. The end point is always included so adjacent chunks share
   /// an exact vertex and leave no seam.
   List<Vector2> sample(double fromX, double toX) {
-    final points = <Vector2>[];
     const spacing = GameConfig.terrainPointSpacing;
+    final points = <Vector2>[];
 
-    for (var x = fromX; x < toX; x += spacing) {
+    // x is computed from the index rather than accumulated with `x +=`.
+    // Accumulating drifts, and when the span divides evenly by the spacing
+    // - which it does exactly, 42 / 0.6 == 70 - the last step lands within
+    // floating-point dust of toX. Appending toX then produced a duplicate
+    // vertex, createChain threw, and that chunk never appeared.
+    final steps = ((toX - fromX) / spacing).floor();
+    for (var i = 0; i <= steps; i++) {
+      final x = fromX + i * spacing;
+      if (x >= toX - minVertexSeparation) break;
       points.add(Vector2(x, surfaceY(x)));
     }
     points.add(Vector2(toX, surfaceY(toX)));
