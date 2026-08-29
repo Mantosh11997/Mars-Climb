@@ -9,10 +9,13 @@ A Hill-Climb-Racing-style rover game set on Mars, built with **Flutter + Flame +
 This repo contains the Dart source and assets only — no platform folders. Generate them once:
 
 ```bash
-flutter create . --project-name mars_climb --platforms=android,ios,web
+flutter create . --project-name mars_climb --org com.marsclimb --platforms=android,ios,web
 flutter pub get
 flutter run
 ```
+
+Or let CI do it: **Actions → Build APK → Run workflow**, then download the APK from
+the run's Artifacts. See [`.github/workflows/README.md`](.github/workflows/README.md).
 
 `flutter create .` will not overwrite `lib/`, `assets/` or `pubspec.yaml`'s dependency
 block, but **do check `pubspec.yaml` afterwards** and re-add the `assets:` section if
@@ -22,12 +25,14 @@ it got rewritten.
 
 | Package | Version | Note |
 |---|---|---|
-| `flame` | `1.18.0` | pinned exactly |
+| `flame` | `1.19.0` | pinned exactly |
 | `flame_forge2d` | `0.18.2` | pinned exactly — must match the flame version |
-| `forge2d` | `0.13.x` | transitive, via `flame_forge2d` |
+| `forge2d` | `0.13.1` | transitive, via `flame_forge2d` |
+| Flutter SDK | `3.24.5` | what CI pins and what this was verified against |
 
-`flame` and `flame_forge2d` version-lock to each other. If you bump one, bump the other
-from the [flame_forge2d compatibility table](https://pub.dev/packages/flame_forge2d).
+`flame` and `flame_forge2d` version-lock hard: `flame_forge2d 0.18.2` requires
+`flame ^1.19.0` and will refuse to resolve against anything else. If you bump one, bump
+the other from the [flame_forge2d compatibility table](https://pub.dev/packages/flame_forge2d).
 
 ---
 
@@ -124,12 +129,17 @@ Flip `GameConfig.driveDirection` from `1.0` to `-1.0`. Forge2D's angular sign
 convention against Flame's y-down world is easy to get backwards, and this is the
 one-line fix rather than a hunt through the joint code.
 
-### If suspension throws a compile error
+### Suspension travel is advisory
 
-`WheelJointDef` gained `stiffness`/`damping` (Box2D 2.4 style) in forge2d 0.12.
-On older forge2d the fields are `frequencyHz` and `dampingRatio` — set those
-straight from the config and delete the conversion block in
-`rover.dart :: _attachWheel`.
+forge2d 0.13's `WheelJoint` has **no translation limit** — no `enableLimit`,
+`lowerTranslation` or `upperTranslation`. The spring is the only thing stopping the
+wheel, so `suspensionLowerTranslation` / `suspensionUpperTranslation` in the config
+document intent but do not constrain anything. Stiffen the spring to reduce travel.
+
+The joint takes the spring as a `frequencyHz` / `dampingRatio` pair, which is what the
+config exposes. Box2D 2.4 and newer forge2d releases want raw `stiffness`/`damping`
+instead; if you bump the package and it stops compiling, convert with
+`omega = 2*pi*f; stiffness = m*omega^2; damping = 2*m*zeta*omega`.
 
 ---
 
@@ -165,12 +175,28 @@ its own factor (`0.08` far rim → `0.42` near dunes). Stars drift slowest of al
 
 ## 6. Status
 
-**Not compiled** — written without a Flutter SDK to hand. Expect to shake out a
-couple of API-signature mismatches on the first `flutter run`, most likely around the
-`WheelJointDef` suspension fields (see §4) and Forge2D method names.
+### Verified
 
-**Sprite placement is measured, not guessed.** The wheel anchors, wheel sprite scale,
-driver size/offset and head offset in `config.dart` were derived by compositing the
-three PNGs together and checking the result by eye, so the rover should assemble
-correctly on first run. The *physics* constants (torque, grip, suspension, gravity)
-are untested starting points and will need real tuning against the running game.
+Against a real Flutter 3.24.5 SDK:
+
+- `flutter pub get` resolves.
+- `flutter analyze` — **No issues found.**
+- `flutter build bundle` compiles all Dart and packages all three PNGs.
+
+That shook out several genuine errors in the first draft: an impossible version pin,
+`ChainShape.hasPrevVertex`, `Body.getWorldVector`, `WheelJointDef`'s limit fields, and
+`createJoint` taking a `Joint` rather than a `JointDef`. See §4 on suspension.
+
+**Sprite placement is measured, not guessed** — wheel anchors, wheel sprite scale,
+driver size/offset and head offset were derived by compositing the three PNGs and
+checking the result by eye.
+
+### Not verified
+
+- **The APK build itself.** No Android SDK was reachable from the machine this was
+  written on, so Gradle/AGP/signing is proven only by CI. Run the workflow (§1) — that
+  is what it is for.
+- **The game actually playing.** Nothing here has been run on a device or emulator.
+  The physics constants (torque, grip, suspension, gravity) are untested starting
+  points; expect to spend real time in `config.dart`.
+- Whether `driveDirection` needs flipping — see §4.

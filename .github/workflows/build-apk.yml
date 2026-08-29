@@ -73,12 +73,31 @@ jobs:
       - name: Generate Android platform files
         run: |
           set -euo pipefail
+
+          # `git checkout -- .` below discards ALL uncommitted work. That is
+          # safe here because CI always starts from a clean checkout - but
+          # bail out rather than destroy anything if that ever stops holding.
+          if ! git diff --quiet; then
+            echo "::error::working tree is dirty; refusing to run (would discard changes)"
+            git status --porcelain
+            exit 1
+          fi
+
           flutter create . \
             --project-name mars_climb \
             --org com.marsclimb \
             --platforms=android
 
+          # Hand every tracked file back to git, keeping only the newly
+          # generated untracked android/ tree.
           git checkout -- .
+
+          # flutter create also drops in a template widget test that pumps a
+          # `MyApp` counter app we don't have. Left in place it fails
+          # `flutter analyze` with an error that has nothing to do with our
+          # code, which would bury the ones that do.
+          rm -f test/widget_test.dart
+          rmdir test 2>/dev/null || true
 
           test -d android || { echo "::error::android/ was not generated"; exit 1; }
           if ! git diff --quiet; then
