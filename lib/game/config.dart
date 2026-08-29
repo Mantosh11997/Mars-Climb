@@ -194,11 +194,13 @@ class GameConfig {
   static const double terrainPersistence = 0.45;
   static const double terrainLacunarity = 2.1;
 
-  /// The first N metres are flat so the rover can spawn and settle.
-  static const double terrainFlatRunway = 22.0;
+  /// The first N metres are flat so the rover can spawn and settle. Keep
+  /// this short - a long flat apron makes the level feel unfinished.
+  static const double terrainFlatRunway = 12.0;
 
-  /// Amplitude ramps in over this distance after the runway.
-  static const double terrainRampDistance = 40.0;
+  /// Amplitude ramps in over this distance after the runway. Short, so the
+  /// course starts climbing almost immediately.
+  static const double terrainRampDistance = 16.0;
 
   static const double terrainFriction = 0.92;
   static const double terrainRestitution = 0.0;
@@ -276,12 +278,21 @@ class GameConfig {
   static const Color skyLow = Color(0xFFD4703C);
   static const Color skyHorizon = Color(0xFFE9A063);
 
-  static const Color mountainFar = Color(0xFF6E3A32);
-  static const Color mountainMid = Color(0xFF8A4633);
-  static const Color mountainNear = Color(0xFF5E2C22);
+  // ATMOSPHERIC PERSPECTIVE. Distance reads as *lighter and hazier*, not
+  // darker: each band steps toward the horizon colour as it recedes, and
+  // every one of them stays lighter than the foreground ground.
+  //
+  // These were inverted before - mountainNear was the darkest colour on
+  // screen, darker than the ground itself - so whenever a distant dune
+  // showed above the terrain line it read as a hole in the world rather
+  // than as scenery behind it.
+  static const Color mountainFar = Color(0xFFD08965); // most distant, hazy
+  static const Color mountainMid = Color(0xFFBE6E4A);
+  static const Color mountainNear = Color(0xFFA85735);
 
-  static const Color groundFill = Color(0xFF9C4426);
-  static const Color groundFillDeep = Color(0xFF4E1E13);
+  // Foreground ground: the darkest, most saturated thing in the scene.
+  static const Color groundFill = Color(0xFF8F3D22);
+  static const Color groundFillDeep = Color(0xFF43190F);
   static const Color groundCrust = Color(0xFFD8703A);
 
   static const Color sun = Color(0xFFFFE2B0);

@@ -26,7 +26,22 @@ class TerrainChunk extends BodyComponent {
   final double startX;
   final double endX;
 
+  /// Physics vertices: exactly this chunk's span, so neighbouring chains
+  /// share an endpoint and the collision surface has no gap.
   late final List<Vector2> _points = _generator.sample(startX, endX);
+
+  /// Render vertices: deliberately overlap the neighbours by a little.
+  ///
+  /// Two antialiased polygons that share an edge blend against each other
+  /// along it and leave a visible hairline seam at every chunk join.
+  /// Overlapping the *fill* (never the physics) hides that completely.
+  late final List<Vector2> _renderPoints = _generator.sample(
+    startX - _fillOverlap,
+    endX + _fillOverlap,
+  );
+
+  /// Metres of fill overlap into each neighbour.
+  static const double _fillOverlap = 1.0;
 
   Path? _fillPath;
   Path? _crustPath;
@@ -71,18 +86,20 @@ class TerrainChunk extends BodyComponent {
   }
 
   void _buildPaths() {
-    final fill = Path()..moveTo(_points.first.x, _points.first.y);
-    final crust = Path()..moveTo(_points.first.x, _points.first.y);
+    // Built from the OVERLAPPING sample, not the physics one.
+    final pts = _renderPoints;
+    final fill = Path()..moveTo(pts.first.x, pts.first.y);
+    final crust = Path()..moveTo(pts.first.x, pts.first.y);
 
-    for (var i = 1; i < _points.length; i++) {
-      fill.lineTo(_points[i].x, _points[i].y);
-      crust.lineTo(_points[i].x, _points[i].y);
+    for (var i = 1; i < pts.length; i++) {
+      fill.lineTo(pts[i].x, pts[i].y);
+      crust.lineTo(pts[i].x, pts[i].y);
     }
 
     const bottom = GameConfig.terrainBaseY + GameConfig.terrainFillDepth;
     fill
-      ..lineTo(_points.last.x, bottom)
-      ..lineTo(_points.first.x, bottom)
+      ..lineTo(pts.last.x, bottom)
+      ..lineTo(pts.first.x, bottom)
       ..close();
 
     _fillPath = fill;

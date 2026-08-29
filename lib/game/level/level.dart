@@ -66,8 +66,8 @@ const Level level1 = Level(
       'air to get you into trouble.',
   length: 520,
   seed: 20260829,
-  amplitude: 4.6,
-  wavelength: 27.0,
+  amplitude: 4.9,
+  wavelength: 22.0,
   cellSpacing: 16.0,
 );
 

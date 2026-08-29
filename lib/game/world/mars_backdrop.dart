@@ -220,8 +220,11 @@ class MarsBackdrop extends Component {
         persistence: 0.5,
         lacunarity: 2.0,
       );
-      // abs() gives peaky, ridge-like silhouettes rather than soft waves.
-      path.lineTo(x, baseline - n.abs() * band.amplitude);
+      // Map noise from [-1,1] to [0,1] rather than taking abs(). abs()
+      // creases to a dead-flat line everywhere the noise crosses zero,
+      // which drew a hard horizontal edge across the sky.
+      final t = (n + 1) / 2;
+      path.lineTo(x, baseline - t * band.amplitude);
     }
 
     path
@@ -239,21 +242,26 @@ class MarsBackdrop extends Component {
     double zoom,
   ) {
     // Warm dust sitting on the horizon, tying the sky to the ground.
-    final horizon =
-        _screenY(GameConfig.terrainBaseY, h, cam, zoom).clamp(0.0, h);
-    final top = (horizon - h * 0.28).clamp(0.0, h);
-    if (horizon <= top) return;
+    //
+    // It fades in AND out: ending the band abruptly at the horizon left a
+    // visible horizontal edge straight across the scene.
+    final horizon = _screenY(GameConfig.terrainBaseY, h, cam, zoom);
+    final top = horizon - h * 0.30;
+    final bottom = horizon + h * 0.14;
+    if (bottom <= 0 || top >= h) return;
 
     canvas.drawRect(
-      Rect.fromLTWH(0, top, w, horizon - top),
+      Rect.fromLTWH(0, top, w, bottom - top),
       Paint()
         ..shader = Gradient.linear(
           Offset(0, top),
-          Offset(0, horizon),
+          Offset(0, bottom),
           [
             const Color(0x00E9A063),
-            GameConfig.skyHorizon.withOpacity(0.32),
+            GameConfig.skyHorizon.withOpacity(0.30),
+            const Color(0x00E9A063),
           ],
+          const [0.0, 0.68, 1.0],
         ),
     );
   }

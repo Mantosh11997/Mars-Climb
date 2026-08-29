@@ -107,10 +107,32 @@ lib/
     └── outcome_overlay.dart           Win + lose panel, run summary
 ```
 
+### Tests
+
 `test/level1_test.dart` checks the *course* rather than the physics: both ends
-flat, no cliffs between chain vertices, and no slope steeper than the rover can
-climb. It also prints an ASCII profile of the level, which is the quickest way
-to see what a seed change did.
+flat, no cliffs between chain vertices, and no slope steeper than the rover's
+grip allows. The steepness budget is derived from `wheelFriction` and
+`terrainFriction` rather than hard-coded, so retuning grip automatically
+retunes what counts as a fair level. It also prints an ASCII profile:
+
+```
+       --      --              --               ### --##             #####   -
+       ###    ####-        -# ####-            -########             ######-####
+###########  -######      -########        -- -##########           ##############
+```
+
+`test/render_preview_test.dart` renders the **real** backdrop and terrain code
+to PNGs through the same camera maths the game uses — no device needed:
+
+```bash
+flutter test test/render_preview_test.dart --tags preview
+# PNGs land in build/previews/
+```
+
+It is tagged `preview` and excluded from normal runs (`flutter test
+--exclude-tags=preview`) because it writes files instead of asserting. This is
+what caught the "cliff" artefact: the terrain was fine, and the hard edge was
+the parallax palette.
 
 ---
 

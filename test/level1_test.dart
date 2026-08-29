@@ -44,7 +44,19 @@ void main() {
         reason: 'largest step between adjacent vertices was $worstJump m');
   });
 
-  test('level 1 is climbable - no slope steeper than the rover can take', () {
+  test('level 1 is climbable - slopes stay inside the rover\'s grip', () {
+    // Box2D mixes two fixtures' friction as sqrt(a*b). A driven wheel can
+    // hold a slope while tan(angle) <= that combined coefficient, so this
+    // is the hard physical ceiling for a standing start.
+    final mu = math.sqrt(GameConfig.wheelFriction * GameConfig.terrainFriction);
+    final gripLimitDeg = math.atan(mu) * 180 / math.pi;
+
+    // Design margin. The ceiling assumes ideal grip, full torque and a
+    // level-headed rover; in practice the course is taken at speed, the
+    // helmet makes it top-heavy, and slopes are met at bad angles.
+    const margin = 0.62;
+    final budgetDeg = gripLimitDeg * margin;
+
     var worstDeg = 0.0;
     var worstX = 0.0;
     for (var x = 0.0; x < level1.finishX; x += 0.25) {
@@ -54,11 +66,16 @@ void main() {
         worstX = x;
       }
     }
+
     // ignore: avoid_print
-    print('steepest slope on level 1: ${worstDeg.toStringAsFixed(1)}deg '
+    print('grip ceiling ${gripLimitDeg.toStringAsFixed(1)}deg, '
+        'design budget ${budgetDeg.toStringAsFixed(1)}deg, '
+        'steepest on level 1 ${worstDeg.toStringAsFixed(1)}deg '
         'at x=${worstX.toStringAsFixed(1)}m');
-    expect(worstDeg, lessThan(40.0),
-        reason: 'a shakedown level should not need a run-up to clear');
+
+    expect(worstDeg, lessThan(budgetDeg),
+        reason: 'level 1 is the shakedown course - it should never need a '
+            'run-up, and never strand a rover that stops on a hill');
   });
 
   test('course profile', () {

@@ -119,6 +119,12 @@ jobs:
         continue-on-error: true
         run: flutter analyze --no-fatal-infos
 
+      # The preview test is excluded: it renders PNGs for eyeballing rather
+      # than asserting anything.
+      - name: Test
+        id: test
+        run: flutter test --exclude-tags=preview
+
       - name: Build APK
         id: build
         run: |
@@ -154,6 +160,7 @@ jobs:
             echo "| Mode | \`${{ github.event.inputs.build_mode || 'release' }}\` |"
             echo "| Commit | \`${GITHUB_SHA::8}\` |"
             echo "| Analyze | ${{ steps.analyze.outcome }} |"
+            echo "| Tests | ${{ steps.test.outcome }} |"
             echo "| Build | ${{ steps.build.outcome }} |"
             echo
             if [ -d build/app/outputs/flutter-apk ]; then
