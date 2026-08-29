@@ -31,6 +31,10 @@ class TerrainChunk extends BodyComponent {
   Path? _fillPath;
   Path? _crustPath;
 
+  /// How far above sea level the ground gradient starts. Constant across
+  /// every chunk so the fill is continuous along the whole course.
+  static const double _gradientTopMetres = 8.0;
+
   @override
   Body createBody() {
     final shape = ChainShape()..createChain(_points);
@@ -89,7 +93,10 @@ class TerrainChunk extends BodyComponent {
   void render(Canvas canvas) {
     if (_fillPath == null) _buildPaths();
 
-    final top = _points.first.y - 2;
+    // Anchor the gradient to fixed WORLD heights, not to this chunk's own
+    // first vertex. Deriving it per chunk gave every chunk a slightly
+    // different gradient and left a visible vertical seam at each join.
+    const top = GameConfig.terrainBaseY - _gradientTopMetres;
     const bottom = GameConfig.terrainBaseY + GameConfig.terrainFillDepth;
 
     final bodyPaint = Paint()

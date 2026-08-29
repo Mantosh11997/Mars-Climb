@@ -28,11 +28,18 @@ class TerrainManager extends Component {
   /// hand out the same cells again.
   final Set<String> _collected = {};
 
+  /// Chunks outside [0, _maxChunkIndex] are off the end of the course -
+  /// past them is the void the rover can fall into.
+  int get _maxChunkIndex =>
+      (generator.level.worldEndX / GameConfig.terrainChunkWidth).ceil() - 1;
+
   /// Call every tick with the rover's world x.
   void updateAround(double focusX) {
     final centreIndex = (focusX / GameConfig.terrainChunkWidth).floor();
-    final first = centreIndex - GameConfig.terrainChunksBehind;
-    final last = centreIndex + GameConfig.terrainChunksAhead;
+    final first =
+        (centreIndex - GameConfig.terrainChunksBehind).clamp(0, _maxChunkIndex);
+    final last =
+        (centreIndex + GameConfig.terrainChunksAhead).clamp(0, _maxChunkIndex);
 
     for (var i = first; i <= last; i++) {
       _ensureChunk(i);
@@ -79,17 +86,22 @@ class TerrainManager extends Component {
     final startX = index * GameConfig.terrainChunkWidth;
     final endX = startX + GameConfig.terrainChunkWidth;
 
-    // Nothing to collect on the spawn runway.
+    // Nothing to collect on the spawn apron or past the finish line.
     if (endX <= GameConfig.terrainFlatRunway) return const [];
+    if (startX >= generator.level.finishX) return const [];
 
-    final rng = SeededRandom(GameConfig.terrainSeed ^ (index * 92821));
+    final rng = SeededRandom(generator.level.seed ^ (index * 92821));
     final cells = <EnergyCell>[];
 
+    final spacing = generator.level.cellSpacing;
+
     var ordinal = 0;
-    var x = startX + rng.range(2, GameConfig.cellSpacing);
+    var x = startX + rng.range(2, spacing);
     while (x < endX) {
       final id = '$index:$ordinal';
-      if (x > GameConfig.terrainFlatRunway * 0.75 && !_collected.contains(id)) {
+      if (x > GameConfig.terrainFlatRunway * 0.75 &&
+          x < generator.level.finishX - 4 &&
+          !_collected.contains(id)) {
         final y = generator.surfaceY(x) - GameConfig.cellHoverHeight;
         cells.add(
           EnergyCell(spawn: Vector2(x, y), id: id)
@@ -97,10 +109,7 @@ class TerrainManager extends Component {
         );
       }
       ordinal++;
-      x += rng.range(
-        GameConfig.cellSpacing * 0.6,
-        GameConfig.cellSpacing * 1.4,
-      );
+      x += rng.range(spacing * 0.6, spacing * 1.4);
     }
 
     return cells;

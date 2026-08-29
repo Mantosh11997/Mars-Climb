@@ -9,19 +9,23 @@ import '../terrain/noise.dart';
 class _ParallaxBand {
   _ParallaxBand({
     required this.factor,
+    required this.verticalFactor,
     required this.color,
-    required this.baselineFraction,
     required this.amplitude,
     required this.wavelength,
     required int seed,
   }) : noise = ValueNoise1D(seed);
 
-  /// 0 == pinned to the camera (infinitely far), 1 == moves with the world.
+  /// Horizontal parallax. 0 == pinned to the camera (infinitely far),
+  /// 1 == moves exactly with the world.
   final double factor;
-  final Color color;
 
-  /// Where the band's baseline sits, as a fraction of viewport height.
-  final double baselineFraction;
+  /// Vertical parallax, deliberately much weaker than horizontal. This is
+  /// what keeps the band sitting above the horizon as the rover climbs and
+  /// drops, instead of being swallowed by the foreground terrain.
+  final double verticalFactor;
+
+  final Color color;
 
   /// Silhouette height in pixels.
   final double amplitude;
@@ -34,11 +38,16 @@ class _ParallaxBand {
 
 /// The whole Martian sky + distant scenery, rendered in VIEWPORT space.
 ///
-/// This lives on `camera.backdrop`, which is not affected by the camera
-/// transform - so we read the camera position ourselves and offset each
-/// band by its own parallax factor. That is what buys the depth.
+/// This lives on `camera.backdrop`. With the default full-screen viewport
+/// that space is exactly screen pixels, untouched by the camera transform,
+/// so we read the camera ourselves and offset each band by its own factor.
+/// That is what buys the depth.
 class MarsBackdrop extends Component {
-  MarsBackdrop({required this.cameraPosition, required this.viewportSize});
+  MarsBackdrop({
+    required this.cameraPosition,
+    required this.viewportSize,
+    required this.cameraZoom,
+  });
 
   /// Live reference to `camera.viewfinder.position` (metres).
   final Vector2 Function() cameraPosition;
@@ -46,32 +55,37 @@ class MarsBackdrop extends Component {
   /// Live reference to `camera.viewport.size` (pixels).
   final Vector2 Function() viewportSize;
 
+  /// Live reference to `camera.viewfinder.zoom` (pixels per metre). The
+  /// zoom is derived from screen height at runtime, so everything that
+  /// tracks the world has to read it rather than assume a constant.
+  final double Function() cameraZoom;
+
   late final List<_ParallaxBand> _bands = [
-    // Far crater rim - barely moves.
+    // Far crater rim - barely moves, sits highest.
     _ParallaxBand(
       factor: 0.08,
+      verticalFactor: 0.16,
       color: GameConfig.mountainFar,
-      baselineFraction: 0.72,
-      amplitude: 110,
-      wavelength: 640,
+      amplitude: 120,
+      wavelength: 620,
       seed: GameConfig.terrainSeed + 11,
     ),
     // Mid ridge.
     _ParallaxBand(
       factor: 0.20,
+      verticalFactor: 0.24,
       color: GameConfig.mountainMid,
-      baselineFraction: 0.82,
-      amplitude: 90,
-      wavelength: 420,
+      amplitude: 95,
+      wavelength: 430,
       seed: GameConfig.terrainSeed + 29,
     ),
-    // Near dunes - noticeably faster.
+    // Near dunes - noticeably faster, sits lowest.
     _ParallaxBand(
       factor: 0.42,
+      verticalFactor: 0.32,
       color: GameConfig.mountainNear,
-      baselineFraction: 0.93,
-      amplitude: 70,
-      wavelength: 300,
+      amplitude: 74,
+      wavelength: 310,
       seed: GameConfig.terrainSeed + 53,
     ),
   ];
@@ -87,6 +101,12 @@ class MarsBackdrop extends Component {
     );
   }
 
+  /// Screen y of a given world y. The camera is centre-anchored, so world
+  /// sea level lands at the middle of the screen plus the camera's own
+  /// offset from it.
+  double _screenY(double worldY, double h, Vector2 cam, double zoom) =>
+      h / 2 + (worldY - cam.y) * zoom;
+
   @override
   void render(Canvas canvas) {
     final size = viewportSize();
@@ -95,16 +115,17 @@ class MarsBackdrop extends Component {
     if (w <= 0 || h <= 0) return;
 
     final cam = cameraPosition();
+    final zoom = cameraZoom();
 
     _renderSky(canvas, w, h);
-    _renderStars(canvas, w, h, cam);
-    _renderSun(canvas, w, h, cam);
+    _renderStars(canvas, w, h, cam, zoom);
+    _renderSun(canvas, w, h, cam, zoom);
 
     for (final band in _bands) {
-      _renderBand(canvas, w, h, cam, band);
+      _renderBand(canvas, w, h, cam, zoom, band);
     }
 
-    _renderDustHaze(canvas, w, h);
+    _renderDustHaze(canvas, w, h, cam, zoom);
   }
 
   void _renderSky(Canvas canvas, double w, double h) {
@@ -125,28 +146,36 @@ class MarsBackdrop extends Component {
     );
   }
 
-  void _renderStars(Canvas canvas, double w, double h, Vector2 cam) {
+  void _renderStars(
+    Canvas canvas,
+    double w,
+    double h,
+    Vector2 cam,
+    double zoom,
+  ) {
     // Stars drift the least of anything - almost, but not quite, fixed.
-    final drift = -cam.x * 0.6;
-    final paint = Paint()..color = const Color(0x99FFE9D6);
+    final drift = -cam.x * zoom * 0.02;
+    final lift = (GameConfig.terrainBaseY - cam.y) * zoom * 0.05;
+    final paint = Paint();
 
     for (var i = 0; i < _stars.length; i++) {
       final s = _stars[i];
       var x = (s.dx * w + drift) % w;
       if (x < 0) x += w;
-      final y = s.dy * h;
+      final y = s.dy * h + lift;
+      if (y < 0 || y > h) continue;
       // Fade stars out toward the bright horizon.
-      paint.color = const Color(0x99FFE9D6).withOpacity(
-        0.6 * (1.0 - (y / (h * 0.5))).clamp(0.0, 1.0),
+      paint.color = const Color(0xFFFFE9D6).withOpacity(
+        0.6 * (1.0 - (y / (h * 0.55))).clamp(0.0, 1.0),
       );
       canvas.drawCircle(Offset(x, y), i.isEven ? 1.1 : 1.7, paint);
     }
   }
 
-  void _renderSun(Canvas canvas, double w, double h, Vector2 cam) {
+  void _renderSun(Canvas canvas, double w, double h, Vector2 cam, double zoom) {
     // A small, pale sun - Mars is 1.5 AU out.
-    final cx = (w * 0.78) - cam.x * 0.9;
-    final cy = h * 0.20 + cam.y * 0.35;
+    final cx = (w * 0.78) - cam.x * zoom * 0.03;
+    final cy = h * 0.18 + (GameConfig.terrainBaseY - cam.y) * zoom * 0.06;
 
     canvas
       ..drawCircle(
@@ -164,12 +193,21 @@ class MarsBackdrop extends Component {
     double w,
     double h,
     Vector2 cam,
+    double zoom,
     _ParallaxBand band,
   ) {
+    // Anchor the band to the WORLD horizon (sea level), damped by the
+    // band's vertical factor. Anchoring to a fixed fraction of screen
+    // height instead would let the foreground terrain rise over the top of
+    // the mountains as soon as the rover climbed anything.
+    final baseline =
+        h / 2 + (GameConfig.terrainBaseY - cam.y) * zoom * band.verticalFactor;
+
+    // Nothing to draw if the band has scrolled entirely off-screen.
+    if (baseline < -band.amplitude) return;
+
     // Camera x is in metres; convert to pixels before applying parallax.
-    final offsetPx = cam.x * GameConfig.cameraZoom * band.factor;
-    // Vertical parallax is much weaker, or the horizon feels rubbery.
-    final baseline = h * band.baselineFraction + cam.y * band.factor * 12;
+    final offsetPx = cam.x * zoom * band.factor;
 
     final path = Path()..moveTo(0, h);
 
@@ -183,8 +221,7 @@ class MarsBackdrop extends Component {
         lacunarity: 2.0,
       );
       // abs() gives peaky, ridge-like silhouettes rather than soft waves.
-      final y = baseline - n.abs() * band.amplitude;
-      path.lineTo(x, y);
+      path.lineTo(x, baseline - n.abs() * band.amplitude);
     }
 
     path
@@ -194,17 +231,28 @@ class MarsBackdrop extends Component {
     canvas.drawPath(path, Paint()..color = band.color);
   }
 
-  void _renderDustHaze(Canvas canvas, double w, double h) {
-    // Warm dust sitting in the bottom third, tying the sky to the ground.
+  void _renderDustHaze(
+    Canvas canvas,
+    double w,
+    double h,
+    Vector2 cam,
+    double zoom,
+  ) {
+    // Warm dust sitting on the horizon, tying the sky to the ground.
+    final horizon =
+        _screenY(GameConfig.terrainBaseY, h, cam, zoom).clamp(0.0, h);
+    final top = (horizon - h * 0.28).clamp(0.0, h);
+    if (horizon <= top) return;
+
     canvas.drawRect(
-      Rect.fromLTWH(0, h * 0.6, w, h * 0.4),
+      Rect.fromLTWH(0, top, w, horizon - top),
       Paint()
         ..shader = Gradient.linear(
-          Offset(0, h * 0.6),
-          Offset(0, h),
+          Offset(0, top),
+          Offset(0, horizon),
           [
             const Color(0x00E9A063),
-            GameConfig.skyHorizon.withOpacity(0.35),
+            GameConfig.skyHorizon.withOpacity(0.32),
           ],
         ),
     );

@@ -43,6 +43,51 @@ class Rover extends BodyComponent {
 
   Throttle throttle = Throttle.none;
 
+  // --- Flip tracking --------------------------------------------------
+  //
+  // The head is welded high on the chassis, so its mass really does make
+  // the rover top-heavy (see GameConfig.headDensity). These two track the
+  // consequences: a completed barrel roll, and simply landing on the roof.
+
+  /// Radians rolled since the rover was last settled upright. Signed, so a
+  /// roll one way then back cancels out rather than accumulating.
+  double rollAccumulator = 0;
+
+  /// Seconds spent continuously inverted.
+  double invertedSeconds = 0;
+
+  /// 1.0 = perfectly upright, 0 = on its side, -1.0 = fully inverted.
+  double get uprightness => -body.worldVector(Vector2(0, -1)).y;
+
+  bool get isUpright => uprightness >= GameConfig.uprightDot;
+
+  bool get isInverted => uprightness <= -GameConfig.invertedDot;
+
+  /// True once the rover has turned a full 360 without recovering.
+  bool get hasRolledOver =>
+      rollAccumulator.abs() >= GameConfig.rolloverRadians;
+
+  /// True once it has been lying on its roof past the grace period.
+  bool get hasSettledInverted =>
+      invertedSeconds >= GameConfig.upsideDownGraceSeconds;
+
+  void _trackFlip(double dt) {
+    if (isUpright) {
+      // Back on its wheels - forgive whatever rotation just happened.
+      rollAccumulator = 0;
+      invertedSeconds = 0;
+      return;
+    }
+
+    rollAccumulator += body.angularVelocity * dt;
+    invertedSeconds = isInverted ? invertedSeconds + dt : 0;
+  }
+
+  void resetFlipTracking() {
+    rollAccumulator = 0;
+    invertedSeconds = 0;
+  }
+
   /// Forward speed along the chassis' own x axis, in m/s. Used by the HUD
   /// and by the brake logic.
   double get forwardSpeed {
@@ -215,6 +260,8 @@ class Rover extends BodyComponent {
       _buildJoints();
     }
 
+    _trackFlip(dt);
+
     switch (throttle) {
       case Throttle.forward:
         _driveAll(
@@ -247,12 +294,6 @@ class Rover extends BodyComponent {
         // Motors off - angular damping on the wheels does the coasting.
         _driveAll(0, 0);
     }
-  }
-
-  /// True once the rover has clearly landed on its roof.
-  bool get isUpsideDown {
-    final up = body.worldVector(Vector2(0, -1));
-    return up.y > 0.55;
   }
 
   void teardown() {

@@ -30,9 +30,10 @@ class Hud extends StatelessWidget {
                 ),
                 const SizedBox(width: 10),
                 _Readout(
-                  icon: Icons.terrain_outlined,
-                  label: 'DISTANCE',
-                  value: '${s.distance.floor()} m',
+                  icon: Icons.flag_outlined,
+                  label: 'LEVEL ${s.level.number}',
+                  value: '${s.distance.floor()} / ${s.level.finishX.floor()} m',
+                  progress: s.progress,
                 ),
                 const SizedBox(width: 10),
                 _Readout(
@@ -115,11 +116,15 @@ class _Readout extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.value,
+    this.progress,
   });
 
   final IconData icon;
   final String label;
   final String value;
+
+  /// When set, a thin course-progress bar is drawn under the value.
+  final double? progress;
 
   @override
   Widget build(BuildContext context) {
@@ -146,6 +151,21 @@ class _Readout extends StatelessWidget {
               height: 1.1,
             ),
           ),
+          if (progress != null) ...[
+            const SizedBox(height: 6),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(3),
+              child: Stack(
+                children: [
+                  Container(height: 4, color: const Color(0x33000000)),
+                  FractionallySizedBox(
+                    widthFactor: progress!.clamp(0.0, 1.0),
+                    child: Container(height: 4, color: GameConfig.accent),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );

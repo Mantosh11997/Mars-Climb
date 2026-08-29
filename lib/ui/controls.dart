@@ -36,34 +36,42 @@ class _ControlsState extends State<Controls> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(22, 0, 22, 26),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            _PedalButton(
-              label: 'BRAKE',
-              icon: Icons.arrow_back_rounded,
-              color: const Color(0xFF9A2C2C),
-              pressed: _brake,
-              onChanged: (v) {
-                setState(() => _brake = v);
-                _apply();
-              },
-            ),
-            const Spacer(),
-            _PedalButton(
-              label: 'GAS',
-              icon: Icons.arrow_forward_rounded,
-              color: GameConfig.accent,
-              pressed: _gas,
-              onChanged: (v) {
-                setState(() => _gas = v);
-                _apply();
-              },
-            ),
-          ],
+    // GameWidget puts each overlay in a Stack as a non-positioned child,
+    // which gets LOOSE constraints and therefore aligns top-left. Without
+    // an explicit Align the pedals sit in the top corners on top of the
+    // HUD - which is exactly where they ended up before this.
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(28, 0, 28, 22),
+          child: Row(
+            mainAxisSize: MainAxisSize.max,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              _PedalButton(
+                label: 'BRAKE',
+                icon: Icons.arrow_back_rounded,
+                color: const Color(0xFF9A2C2C),
+                pressed: _brake,
+                onChanged: (v) {
+                  setState(() => _brake = v);
+                  _apply();
+                },
+              ),
+              const Spacer(),
+              _PedalButton(
+                label: 'GAS',
+                icon: Icons.arrow_forward_rounded,
+                color: GameConfig.accent,
+                pressed: _gas,
+                onChanged: (v) {
+                  setState(() => _gas = v);
+                  _apply();
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );

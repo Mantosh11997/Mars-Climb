@@ -82,6 +82,10 @@ lib/
 ├── game/
 │   ├── config.dart                    ★ ALL TUNING CONSTANTS LIVE HERE
 │   ├── mars_climb_game.dart           Forge2DGame: camera, run lifecycle, tick
+│   ├── level/
+│   │   ├── level.dart                 ★ Level definitions (level 1 lives here)
+│   │   ├── finish_line.dart           Checkered banner at the course end
+│   │   └── start_wall.dart            Invisible wall behind the start line
 │   ├── state/
 │   │   └── game_state.dart            ChangeNotifier the HUD listens to
 │   ├── terrain/
@@ -98,10 +102,15 @@ lib/
 │   └── world/
 │       └── mars_backdrop.dart         Sky gradient, sun, stars, 3 parallax bands
 └── ui/
-    ├── hud.dart                       Oxygen gauge, cells, distance, speed
+    ├── hud.dart                       Oxygen, cells, level progress, speed
     ├── controls.dart                  GAS / BRAKE hold-buttons
-    └── game_over_overlay.dart         Run summary + redeploy
+    └── outcome_overlay.dart           Win + lose panel, run summary
 ```
+
+`test/level1_test.dart` checks the *course* rather than the physics: both ends
+flat, no cliffs between chain vertices, and no slope steeper than the rover can
+climb. It also prints an ASCII profile of the level, which is the quickest way
+to see what a seed change did.
 
 ---
 
@@ -119,9 +128,13 @@ commented. The headline knobs:
 | `suspensionFrequencyHz` | Spring rate. ~4 Hz soft buggy, ~9 Hz stiff. |
 | `suspensionDampingRatio` | 0 = pogo stick, 1 = critically damped. |
 | `chassisPitchTorque` | Nose-lift under throttle — the wheelie. |
-| `terrainAmplitude` / `terrainWavelength` | Hill height / hill length. |
-| `terrainSeed` | Change it, get a different planet. |
+| `visibleWorldHeight` | **Zoom.** Metres of world visible vertically — smaller is more zoomed in. |
+| `headDensity` | Top-heaviness. The helmet's mass is what makes the rover want to flip. |
+| `rolloverRadians` | How much rotation counts as a flip (default a full 360°). |
 | `oxygenIdleDrain` / `oxygenThrottleDrain` | How brutal the fuel clock is. |
+
+Per-course settings — length, seed, hill amplitude/wavelength, cell spacing —
+live on the `Level` in `game/level/level.dart`, not in `config.dart`.
 
 ### If the rover drives backwards
 
@@ -169,7 +182,30 @@ is the flip/crash detector.
 the camera transform — so each band reads the camera position itself and offsets by
 its own factor (`0.08` far rim → `0.42` near dunes). Stars drift slowest of all.
 
-**Lose conditions:** oxygen hits zero, or the driver's head touches the ground.
+**Levels.** A `Level` is a finite course: length, seed, hill shape, cell spacing.
+Terrain streams only within `[0, length + runOut]`, and hill amplitude ramps to
+zero approaching the finish, so the finish banner always sits on flat, landable
+ground. A `StartWall` stops the rover reversing off the back; the far end
+deliberately has none, because driving off it is a real way to lose.
+
+**Camera.** Zoom is derived from the real screen height every resize
+(`zoom = screenHeight / visibleWorldHeight`), using Flame's default full-screen
+viewport. The same slice of world is visible on every device, the scene fills
+the display edge to edge, and there are no letterbox bars.
+
+**Ending a run.** One win and four losses:
+
+| Outcome | Trigger |
+|---|---|
+| Level complete | Rover's x reaches the finish line |
+| Oxygen depleted | Fuel cell hits zero |
+| Helmet breach | The driver's head body touches terrain |
+| Rover flipped | A full 360° roll without recovering, **or** lying inverted past a grace period |
+| Lost off-map | Rover falls further below the ground than `fallOutMargin` |
+
+The flip check integrates the chassis' angular velocity while it is tipped and
+resets the moment it settles upright, so rocking on a landing never accumulates
+into a false positive.
 
 ---
 

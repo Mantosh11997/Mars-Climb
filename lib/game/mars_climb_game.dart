@@ -5,6 +5,9 @@ import 'package:flame_forge2d/flame_forge2d.dart';
 
 import 'collectibles/energy_cell.dart';
 import 'config.dart';
+import 'level/finish_line.dart';
+import 'level/level.dart';
+import 'level/start_wall.dart';
 import 'state/game_state.dart';
 import 'terrain/terrain_generator.dart';
 import 'terrain/terrain_manager.dart';
@@ -18,21 +21,18 @@ class Overlays {
   static const hud = 'hud';
   static const controls = 'controls';
   static const gameOver = 'gameOver';
+  static const levelComplete = 'levelComplete';
 }
 
 class MarsClimbGame extends Forge2DGame {
-  MarsClimbGame()
-      : super(
-          gravity: Vector2(0, GameConfig.gravity),
-          camera: CameraComponent.withFixedResolution(
-            width: GameConfig.resolution.x,
-            height: GameConfig.resolution.y,
-          ),
-        );
+  MarsClimbGame({this.level = level1})
+      : super(gravity: Vector2(0, GameConfig.gravity));
 
-  final GameState state = GameState();
+  Level level;
 
-  late final TerrainGenerator generator;
+  late final GameState state = GameState(level);
+
+  late TerrainGenerator generator;
   late TerrainManager terrain;
   late Rover rover;
 
@@ -45,6 +45,7 @@ class MarsClimbGame extends Forge2DGame {
   late final Sprite _driverSprite;
 
   bool _built = false;
+  bool _rebuildPending = false;
 
   @override
   Future<void> onLoad() async {
@@ -54,23 +55,24 @@ class MarsClimbGame extends Forge2DGame {
     _wheelSprite = await loadSprite('wheel.png');
     _driverSprite = await loadSprite('character.png');
 
-    camera.viewfinder
-      ..zoom = GameConfig.cameraZoom
-      ..anchor = Anchor.center;
+    camera.viewfinder.anchor = Anchor.center;
+    _applyZoom();
 
     // Sky + parallax scenery live behind the world, in viewport space.
+    // With the default full-screen viewport those coordinates are exactly
+    // screen pixels, so the backdrop covers the display edge to edge on
+    // any aspect ratio.
     camera.backdrop.add(
       MarsBackdrop(
         cameraPosition: () => camera.viewfinder.position,
         viewportSize: () => camera.viewport.size,
+        cameraZoom: () => camera.viewfinder.zoom,
       ),
     );
 
     _cameraTarget = PositionComponent();
     world.add(_cameraTarget);
     camera.follow(_cameraTarget);
-
-    generator = TerrainGenerator();
 
     _buildRun();
 
@@ -79,12 +81,29 @@ class MarsClimbGame extends Forge2DGame {
       ..add(Overlays.controls);
   }
 
+  /// Zoom is derived from the real screen height so the same slice of world
+  /// is visible on every device, and the scene always fills the screen.
+  void _applyZoom() {
+    final height = camera.viewport.size.y;
+    if (height <= 0) return;
+    camera.viewfinder.zoom = (height / GameConfig.visibleWorldHeight)
+        .clamp(GameConfig.minCameraZoom, GameConfig.maxCameraZoom);
+  }
+
+  @override
+  void onGameResize(Vector2 size) {
+    super.onGameResize(size);
+    if (isLoaded) _applyZoom();
+  }
+
   // ---------------------------------------------------------------------
   // RUN LIFECYCLE
   // ---------------------------------------------------------------------
 
   void _buildRun() {
-    const spawnX = GameConfig.terrainFlatRunway * 0.4;
+    generator = TerrainGenerator(level);
+
+    const spawnX = Level.startX;
     final spawnY = generator.surfaceY(spawnX) -
         (GameConfig.wheelRadius + GameConfig.chassisSize.y / 2 + 0.6);
     final spawn = Vector2(spawnX, spawnY);
@@ -97,12 +116,16 @@ class MarsClimbGame extends Forge2DGame {
     // Generate the ground before the rover drops onto it.
     terrain.updateAround(spawnX);
 
+    world
+      ..add(StartWall(generator: generator))
+      ..add(FinishLine(generator: generator));
+
     rover = Rover(
       spawn: spawn,
       chassisSprite: _chassisSprite,
       wheelSprite: _wheelSprite,
       driverSprite: _driverSprite,
-      onHeadImpact: _onHeadImpact,
+      onHeadImpact: () => _endRun(RunStatus.headImpact),
     );
     world.add(rover);
 
@@ -112,16 +135,20 @@ class MarsClimbGame extends Forge2DGame {
     _built = true;
   }
 
-  void restart() {
+  void restart({Level? level}) {
     _built = false;
+    if (level != null) this.level = level;
 
     rover.teardown();
     terrain.clear();
     terrain.removeFromParent();
+    world.children.whereType<StartWall>().forEach((c) => c.removeFromParent());
+    world.children.whereType<FinishLine>().forEach((c) => c.removeFromParent());
 
-    state.reset();
+    state.reset(level: this.level);
     overlays
       ..remove(Overlays.gameOver)
+      ..remove(Overlays.levelComplete)
       ..add(Overlays.controls);
 
     // Rebuild on the next tick, after Flame has flushed the removals -
@@ -129,8 +156,6 @@ class MarsClimbGame extends Forge2DGame {
     // more step and the new rover can spawn inside them.
     _rebuildPending = true;
   }
-
-  bool _rebuildPending = false;
 
   // ---------------------------------------------------------------------
   // INPUT (called from the Flutter control overlay)
@@ -145,20 +170,52 @@ class MarsClimbGame extends Forge2DGame {
   }
 
   // ---------------------------------------------------------------------
-  // LOSE CONDITIONS
+  // RUN OUTCOMES
   // ---------------------------------------------------------------------
 
-  void _onHeadImpact() {
+  void _endRun(RunStatus outcome) {
     if (state.isOver) return;
-    state.crash();
-    _endRun();
+    state.end(outcome);
+    rover.throttle = Throttle.none;
+
+    overlays.remove(Overlays.controls);
+    overlays.add(
+      outcome == RunStatus.finished
+          ? Overlays.levelComplete
+          : Overlays.gameOver,
+    );
   }
 
-  void _endRun() {
-    rover.throttle = Throttle.none;
-    overlays
-      ..remove(Overlays.controls)
-      ..add(Overlays.gameOver);
+  /// Everything that can end a run, checked in priority order.
+  void _checkOutcomes(Vector2 roverPos, double dt) {
+    // Crossed the finish line.
+    if (roverPos.x >= level.finishX) {
+      _endRun(RunStatus.finished);
+      return;
+    }
+
+    // Fell off the end of the world (or through it).
+    if (roverPos.y > generator.lowestGroundY + GameConfig.fallOutMargin) {
+      _endRun(RunStatus.fellOutOfWorld);
+      return;
+    }
+
+    // Turned a full 360, or landed on the roof and stayed there.
+    if (rover.hasRolledOver || rover.hasSettledInverted) {
+      _endRun(RunStatus.rolledOver);
+      return;
+    }
+
+    // Oxygen burn. Head impact is reported by the head body itself.
+    final throttling = rover.throttle != Throttle.none;
+    state.drain(
+      (level.oxygenIdleDrain +
+              (throttling ? level.oxygenThrottleDrain : 0.0)) *
+          dt,
+    );
+    if (state.status == RunStatus.outOfOxygen) {
+      _endRun(RunStatus.outOfOxygen);
+    }
   }
 
   // ---------------------------------------------------------------------
@@ -180,35 +237,23 @@ class MarsClimbGame extends Forge2DGame {
 
     final roverPos = rover.body.position;
 
-    // Stream terrain around the rover.
     terrain.updateAround(roverPos.x);
-
     _updateCamera(dt, roverPos);
 
     if (state.isOver) return;
 
-    // Oxygen burn.
-    final throttling = rover.throttle != Throttle.none;
-    state.drain(
-      (GameConfig.oxygenIdleDrain +
-              (throttling ? GameConfig.oxygenThrottleDrain : 0.0)) *
-          dt,
-    );
+    _checkOutcomes(roverPos, dt);
 
     state.updateTelemetry(
-      distance: rover.distanceTravelled,
+      distance: roverPos.x.clamp(0.0, level.finishX),
       speed: rover.forwardSpeed,
     );
-
-    if (state.status == RunStatus.outOfOxygen) {
-      _endRun();
-    }
   }
 
   void _updateCamera(double dt, Vector2 roverPos) {
     final desired = Vector2(
       roverPos.x + GameConfig.cameraLookAhead,
-      roverPos.y - 1.0,
+      roverPos.y - GameConfig.cameraHeightOffset,
     );
 
     // Exponential smoothing - frame-rate independent.
@@ -216,7 +261,5 @@ class MarsClimbGame extends Forge2DGame {
     _cameraTarget.position += (desired - _cameraTarget.position) * t;
   }
 
-  void _onCellCollected(EnergyCell cell) {
-    state.collectCell();
-  }
+  void _onCellCollected(EnergyCell cell) => state.collectCell();
 }

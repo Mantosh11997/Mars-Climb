@@ -24,17 +24,30 @@ class GameConfig {
   // CAMERA
   // -------------------------------------------------------------------
 
-  /// Logical resolution the camera renders at (letterboxed on any device).
-  static final Vector2 resolution = Vector2(1280, 720);
+  /// Vertical slice of the world the camera shows, in METRES.
+  ///
+  /// This is the zoom control: SMALLER == more zoomed in. Zoom in pixels is
+  /// derived from this and the real screen height every resize, so framing
+  /// is identical on every device and aspect ratio, and the scene always
+  /// fills the screen edge to edge - no letterbox bars.
+  ///
+  /// The rover is ~4.6 m long, so at 13 m it fills roughly a fifth of the
+  /// screen height.
+  static const double visibleWorldHeight = 13.0;
 
-  /// Pixels per metre. Higher == more zoomed in.
-  static const double cameraZoom = 34.0;
+  /// Clamp so the zoom stays sane on extreme screens.
+  static const double minCameraZoom = 18.0;
+  static const double maxCameraZoom = 160.0;
 
   /// How fast the camera catches up to the rover (1/s). Higher == stiffer.
   static const double cameraFollowLerp = 6.0;
 
   /// Camera looks this far ahead of the rover, in metres.
-  static const double cameraLookAhead = 3.0;
+  static const double cameraLookAhead = 3.2;
+
+  /// Camera sits this far above the rover, in metres (y-down, so positive
+  /// lifts the rover toward the bottom of frame and shows more sky).
+  static const double cameraHeightOffset = 1.6;
 
   // -------------------------------------------------------------------
   // ROVER - BODY GEOMETRY
@@ -142,7 +155,12 @@ class GameConfig {
   /// detect a face-plant. Position is chassis-local.
   static const double headRadius = 0.31;
   static final Vector2 headOffset = Vector2(-0.14, -0.82);
-  static const double headDensity = 0.35;
+
+  /// TOP-HEAVINESS. The head is welded high above the chassis, so its mass
+  /// genuinely raises the rover's centre of gravity and makes it want to
+  /// tip on steep ground. Raise it for a twitchier, flip-happy rover; drop
+  /// it toward 0.2 for a rover that plants itself.
+  static const double headDensity = 0.6;
 
   // -------------------------------------------------------------------
   // TERRAIN
@@ -187,6 +205,31 @@ class GameConfig {
 
   /// Change this for a different world.
   static const int terrainSeed = 20260829;
+
+  // -------------------------------------------------------------------
+  // CRASH / FALL DETECTION
+  // -------------------------------------------------------------------
+
+  /// A full roll (2*pi) without the rover settling upright ends the run.
+  /// Lower it to punish half-flips too; raise it past 2*pi to allow
+  /// showboating.
+  static const double rolloverRadians = 2 * 3.141592653589793;
+
+  /// Roll only counts while the rover is genuinely tipped. Once the
+  /// chassis' up-vector is at least this upright again, the accumulator
+  /// resets - so a rocking landing doesn't slowly add up to a "flip".
+  static const double uprightDot = 0.72;
+
+  /// Landing on the roof and staying there this long (seconds) is a crash
+  /// even without a full 360.
+  static const double upsideDownGraceSeconds = 1.6;
+
+  /// Chassis up-vector threshold that counts as inverted.
+  static const double invertedDot = 0.35;
+
+  /// Falling this many metres below the level's lowest ground ends the run
+  /// - the rover has left the map.
+  static const double fallOutMargin = 22.0;
 
   // -------------------------------------------------------------------
   // OXYGEN / FUEL CELL

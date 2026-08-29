@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 
 import 'game/mars_climb_game.dart';
 import 'ui/controls.dart';
-import 'ui/game_over_overlay.dart';
+import 'ui/outcome_overlay.dart';
 import 'ui/hud.dart';
 
 Future<void> main() async {
@@ -38,7 +38,8 @@ class MarsClimbApp extends StatelessWidget {
           overlayBuilderMap: {
             Overlays.hud: (_, g) => Hud(game: g),
             Overlays.controls: (_, g) => Controls(game: g),
-            Overlays.gameOver: (_, g) => GameOverOverlay(game: g),
+            Overlays.gameOver: (_, g) => OutcomeOverlay(game: g),
+            Overlays.levelComplete: (_, g) => OutcomeOverlay(game: g),
           },
           loadingBuilder: (_) => const Center(
             child: CircularProgressIndicator(color: Color(0xFFFF8A3D)),
