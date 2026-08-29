@@ -11,8 +11,8 @@ dependencies:
     sdk: flutter
 
   # --- Pinned versions (these two must be kept compatible with each other) ---
-  # flame 1.18.0  <-> flame_forge2d 0.18.2  <-> forge2d 0.13.x
-  flame: 1.18.0
+  # flame 1.19.0 <-> flame_forge2d 0.18.2 <-> forge2d 0.13.1 (verified)
+  flame: 1.19.0
   flame_forge2d: 0.18.2
 
 dev_dependencies:

@@ -112,7 +112,7 @@ class MarsBackdrop extends Component {
       Rect.fromLTWH(0, 0, w, h),
       Paint()
         ..shader = Gradient.linear(
-          Offset(0, 0),
+          const Offset(0, 0),
           Offset(0, h),
           const [
             GameConfig.skyTop,
@@ -136,7 +136,7 @@ class MarsBackdrop extends Component {
       if (x < 0) x += w;
       final y = s.dy * h;
       // Fade stars out toward the bright horizon.
-      paint.color = Color(0x99FFE9D6).withOpacity(
+      paint.color = const Color(0x99FFE9D6).withOpacity(
         0.6 * (1.0 - (y / (h * 0.5))).clamp(0.0, 1.0),
       );
       canvas.drawCircle(Offset(x, y), i.isEven ? 1.1 : 1.7, paint);

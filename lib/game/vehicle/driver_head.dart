@@ -1,4 +1,3 @@
-import 'package:flame/components.dart';
 import 'package:flutter/foundation.dart' show VoidCallback;
 import 'package:flame_forge2d/flame_forge2d.dart';
 

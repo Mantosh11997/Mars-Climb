@@ -46,7 +46,7 @@ class Rover extends BodyComponent {
   /// Forward speed along the chassis' own x axis, in m/s. Used by the HUD
   /// and by the brake logic.
   double get forwardSpeed {
-    final forward = body.getWorldVector(Vector2(1, 0));
+    final forward = body.worldVector(Vector2(1, 0));
     return body.linearVelocity.dot(forward);
   }
 
@@ -158,34 +158,27 @@ class Rover extends BodyComponent {
       ..enableMotor = true
       ..motorSpeed = 0
       ..maxMotorTorque = 0
-      ..enableLimit = true
-      ..lowerTranslation = GameConfig.suspensionLowerTranslation
-      ..upperTranslation = GameConfig.suspensionUpperTranslation;
+      // forge2d 0.13 takes the suspension spring as a frequency /
+      // damping-ratio pair, so the config values go straight in.
+      //
+      // Box2D 2.4 (and forge2d's newer releases) instead want raw
+      // stiffness/damping. If you bump the package and this stops
+      // compiling, convert with:
+      //   omega = 2*pi*f;  stiffness = m*omega^2;  damping = 2*m*zeta*omega
+      ..frequencyHz = GameConfig.suspensionFrequencyHz
+      ..dampingRatio = GameConfig.suspensionDampingRatio;
 
-    // Box2D's soft-constraint form: convert a human-friendly
-    // frequency/damping-ratio pair into the raw stiffness/damping the
-    // solver wants.
-    //
-    //   omega     = 2*pi*f
-    //   stiffness = m * omega^2
-    //   damping   = 2 * m * zeta * omega
-    //
-    // NOTE: on forge2d < 0.12 these two fields are named `frequencyHz`
-    // and `dampingRatio` instead - set those directly from the config
-    // and delete this conversion.
-    final m = wheel.body.mass;
-    final omega = 2 * math.pi * GameConfig.suspensionFrequencyHz;
-    def
-      ..stiffness = m * omega * omega
-      ..damping = 2 * m * GameConfig.suspensionDampingRatio * omega;
-
-    return world.createJoint(def) as WheelJoint;
+    // forge2d's WheelJoint has no translation limit, so the spring itself
+    // is what stops the wheel - there is no hard stop at full travel.
+    final joint = WheelJoint(def);
+    world.createJoint(joint);
+    return joint;
   }
 
   void _weldHead() {
     final def = WeldJointDef()
       ..initialize(body, head.body, head.body.position);
-    world.createJoint(def);
+    world.createJoint(WeldJoint(def));
   }
 
   // ---------------------------------------------------------------------
@@ -196,7 +189,7 @@ class Rover extends BodyComponent {
     if (joint == null) return;
     joint
       ..enableMotor(true)
-      ..setMotorSpeed(speed)
+      ..motorSpeed = speed
       ..setMaxMotorTorque(torque);
   }
 
@@ -258,7 +251,7 @@ class Rover extends BodyComponent {
 
   /// True once the rover has clearly landed on its roof.
   bool get isUpsideDown {
-    final up = body.getWorldVector(Vector2(0, -1));
+    final up = body.worldVector(Vector2(0, -1));
     return up.y > 0.55;
   }
 

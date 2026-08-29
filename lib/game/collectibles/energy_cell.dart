@@ -68,7 +68,7 @@ class EnergyCell extends BodyComponent with ContactCallbacks {
 
   @override
   void render(Canvas canvas) {
-    final r = GameConfig.cellRadius;
+    const r = GameConfig.cellRadius;
     // Gentle bob, so a field of cells doesn't look like a static row.
     final bob = math.sin(_spin * 1.3) * 0.12;
     // Squash horizontally to fake a slow spin about the vertical axis.

@@ -72,7 +72,7 @@ class _OxygenGauge extends StatelessWidget {
             children: [
               const Icon(Icons.bolt, size: 15, color: Colors.white70),
               const SizedBox(width: 5),
-              Text(
+              const Text(
                 'FUEL CELL / O₂',
                 style: _labelStyle,
               ),

@@ -37,18 +37,17 @@ class TerrainChunk extends BodyComponent {
 
     // Ghost vertices: tell the chain what the neighbouring chunks look
     // like so wheels don't snag on the seam between two chunks.
-    final spacing = GameConfig.terrainPointSpacing;
+    const spacing = GameConfig.terrainPointSpacing;
+    // Assigning these also flips the shape's internal hasPrev/hasNext flags.
     shape
       ..prevVertex = Vector2(
         startX - spacing,
         _generator.surfaceY(startX - spacing),
       )
-      ..hasPrevVertex = true
       ..nextVertex = Vector2(
         endX + spacing,
         _generator.surfaceY(endX + spacing),
-      )
-      ..hasNextVertex = true;
+      );
 
     final fixtureDef = FixtureDef(shape)
       ..friction = GameConfig.terrainFriction
@@ -76,7 +75,7 @@ class TerrainChunk extends BodyComponent {
       crust.lineTo(_points[i].x, _points[i].y);
     }
 
-    final bottom = GameConfig.terrainBaseY + GameConfig.terrainFillDepth;
+    const bottom = GameConfig.terrainBaseY + GameConfig.terrainFillDepth;
     fill
       ..lineTo(_points.last.x, bottom)
       ..lineTo(_points.first.x, bottom)
@@ -91,7 +90,7 @@ class TerrainChunk extends BodyComponent {
     if (_fillPath == null) _buildPaths();
 
     final top = _points.first.y - 2;
-    final bottom = GameConfig.terrainBaseY + GameConfig.terrainFillDepth;
+    const bottom = GameConfig.terrainBaseY + GameConfig.terrainFillDepth;
 
     final bodyPaint = Paint()
       ..shader = Gradient.linear(

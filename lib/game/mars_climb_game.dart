@@ -1,6 +1,5 @@
 import 'dart:math' as math;
 
-import 'package:flame/camera.dart';
 import 'package:flame/components.dart';
 import 'package:flame_forge2d/flame_forge2d.dart';
 
@@ -85,7 +84,7 @@ class MarsClimbGame extends Forge2DGame {
   // ---------------------------------------------------------------------
 
   void _buildRun() {
-    final spawnX = GameConfig.terrainFlatRunway * 0.4;
+    const spawnX = GameConfig.terrainFlatRunway * 0.4;
     final spawnY = generator.surfaceY(spawnX) -
         (GameConfig.wheelRadius + GameConfig.chassisSize.y / 2 + 0.6);
     final spawn = Vector2(spawnX, spawnY);

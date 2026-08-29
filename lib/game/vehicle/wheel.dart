@@ -22,7 +22,7 @@ class Wheel extends BodyComponent {
   Future<void> onLoad() async {
     await super.onLoad();
 
-    final diameter = GameConfig.wheelRadius * 2 * GameConfig.wheelSpriteScale;
+    const diameter = GameConfig.wheelRadius * 2 * GameConfig.wheelSpriteScale;
 
     // The sprite is a child of the body, so it inherits the wheel's
     // rotation for free - the tyre visibly spins.

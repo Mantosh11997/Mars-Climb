@@ -47,7 +47,7 @@ class TerrainGenerator {
   /// an exact vertex and leave no seam.
   List<Vector2> sample(double fromX, double toX) {
     final points = <Vector2>[];
-    final spacing = GameConfig.terrainPointSpacing;
+    const spacing = GameConfig.terrainPointSpacing;
 
     for (var x = fromX; x < toX; x += spacing) {
       points.add(Vector2(x, surfaceY(x)));
