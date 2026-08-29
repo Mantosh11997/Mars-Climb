@@ -51,10 +51,21 @@ flutter:
 Flame resolves sprite paths relative to `assets/images/`, so `loadSprite('wheel.png')`
 is the correct call — no `assets/images/` prefix.
 
-> **One thing to fix in the art:** `car_body.png` ships with an opaque black
-> background and an orange glow baked in, so the rover renders as a black rectangle
-> against the Martian sky. `wheel.png` and `character.png` are properly cut out.
-> Re-export the chassis with a transparent background and it'll drop straight in.
+All three are cleanly cut out — alpha is effectively binary (fully transparent or
+fully opaque, with a normal antialiased rim). The orange glow visible in a preview is
+just how a viewer paints the transparent area; it is not baked into the pixels.
+
+They have been re-exported through `tool/fix_sprite_alpha.py`, which:
+
+- **Alpha-bleeds** the art colour outward into the transparent margin. The GPU
+  interpolates RGB and alpha independently, so whatever colour hides under
+  transparent pixels gets mixed in at the sprite's edge and when mipmaps are built.
+  Padding it with the art's own edge colour removes that as a source of fringing.
+- **Normalises** near-opaque alpha to a true 255 (`car_body.png` topped out at 254).
+
+The script asserts that no visible pixel changes — same alpha everywhere, same RGB
+wherever alpha is non-zero. Run `python3 tool/fix_sprite_alpha.py --check` to verify
+the committed files are clean; it needs `pillow` and `numpy`.
 
 ---
 
@@ -154,6 +165,12 @@ its own factor (`0.08` far rim → `0.42` near dunes). Stars drift slowest of al
 
 ## 6. Status
 
-Not compiled — this was written without a Flutter SDK to hand. Expect to shake out
-a couple of API-signature mismatches on the first `flutter run`, most likely around
-the `WheelJointDef` suspension fields (see §4) and Forge2D method names.
+**Not compiled** — written without a Flutter SDK to hand. Expect to shake out a
+couple of API-signature mismatches on the first `flutter run`, most likely around the
+`WheelJointDef` suspension fields (see §4) and Forge2D method names.
+
+**Sprite placement is measured, not guessed.** The wheel anchors, wheel sprite scale,
+driver size/offset and head offset in `config.dart` were derived by compositing the
+three PNGs together and checking the result by eye, so the rover should assemble
+correctly on first run. The *physics* constants (torque, grip, suspension, gravity)
+are untested starting points and will need real tuning against the running game.

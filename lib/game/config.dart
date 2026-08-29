@@ -58,14 +58,17 @@ class GameConfig {
   // ROVER - WHEELS
   // -------------------------------------------------------------------
 
-  static const double wheelRadius = 0.62;
+  static const double wheelRadius = 0.58;
 
-  /// Visual diameter multiplier for wheel.png (tyre art has some padding).
-  static const double wheelSpriteScale = 2.15;
+  /// Visual diameter multiplier for wheel.png: the drawn diameter is
+  /// wheelRadius * 2 * this. Measured against the chassis art so the tyres
+  /// fill the wheel wells (the tyre fills ~92% of its square canvas).
+  static const double wheelSpriteScale = 1.08;
 
   /// Wheel anchor points in chassis-local space (x: -rear +front, y: down).
-  static final Vector2 rearWheelAnchor = Vector2(-1.42, 0.60);
-  static final Vector2 frontWheelAnchor = Vector2(1.52, 0.60);
+  /// Measured from the wheel wells in car_body.png.
+  static final Vector2 rearWheelAnchor = Vector2(-1.05, 0.69);
+  static final Vector2 frontWheelAnchor = Vector2(1.46, 0.69);
 
   static const double wheelDensity = 1.1;
 
@@ -128,15 +131,17 @@ class GameConfig {
   // DRIVER
   // -------------------------------------------------------------------
 
-  static final Vector2 driverSpriteSize = Vector2(2.35, 2.4);
+  /// Sized and placed against the seat in car_body.png. Preserves
+  /// character.png's 1242x1266 aspect.
+  static final Vector2 driverSpriteSize = Vector2(1.38, 1.41);
 
   /// Where the character art sits relative to the chassis centre.
-  static final Vector2 driverSpriteOffset = Vector2(-0.25, -1.15);
+  static final Vector2 driverSpriteOffset = Vector2(0.10, -0.40);
 
   /// The head is a real physics body (welded to the chassis) so we can
   /// detect a face-plant. Position is chassis-local.
-  static const double headRadius = 0.36;
-  static final Vector2 headOffset = Vector2(-0.72, -1.72);
+  static const double headRadius = 0.31;
+  static final Vector2 headOffset = Vector2(-0.14, -0.82);
   static const double headDensity = 0.35;
 
   // -------------------------------------------------------------------
