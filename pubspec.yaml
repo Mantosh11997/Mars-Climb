@@ -1,0 +1,26 @@
+name: mars_climb
+description: Mars Climb - a hill-climb style rover game set on Mars.
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # --- Pinned versions (these two must be kept compatible with each other) ---
+  # flame 1.18.0  <-> flame_forge2d 0.18.2  <-> forge2d 0.13.x
+  flame: 1.18.0
+  flame_forge2d: 0.18.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
