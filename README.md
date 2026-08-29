@@ -83,7 +83,8 @@ lib/
 │   ├── config.dart                    ★ ALL TUNING CONSTANTS LIVE HERE
 │   ├── mars_climb_game.dart           Forge2DGame: camera, run lifecycle, tick
 │   ├── level/
-│   │   ├── level.dart                 ★ Level definitions (level 1 lives here)
+│   │   ├── level.dart                 ★ Level definitions (all courses here)
+│   │   ├── level_stats.dart           Memoised grade/relief/profile per course
 │   │   ├── finish_line.dart           Checkered banner at the course end
 │   │   └── start_wall.dart            Invisible wall behind the start line
 │   ├── state/
@@ -102,10 +103,30 @@ lib/
 │   └── world/
 │       └── mars_backdrop.dart         Sky gradient, sun, stars, 3 parallax bands
 └── ui/
+    ├── level_select_screen.dart       Course picker (app home)
+    ├── level_profile.dart             Draws a course's real silhouette
+    ├── game_screen.dart               Hosts one run of one course
     ├── hud.dart                       Oxygen, cells, level progress, speed
     ├── controls.dart                  GAS / BRAKE hold-buttons
     └── outcome_overlay.dart           Win + lose panel, run summary
 ```
+
+## The courses
+
+| # | Name | Length | Max grade | Relief | Character |
+|---|---|---|---|---|---|
+| 1 | Acidalia Flats | 520 m | 31° | 6 m | Shakedown; forgiving rolling dunes |
+| 2 | Chryse Ripples | 640 m | 37° | 6 m | Short choppy ridges, never settles |
+| 3 | Tharsis Rollers | 780 m | 36° | 10 m | Long heavy swells, big airtime |
+| 4 | Olympus Ascent | 900 m | 44° | 7 m | Steep walls, no room for a run-up |
+
+Adding a course is one `const Level` in `game/level/level.dart` plus an entry
+in `levels`. Everything else — terrain, streaming, finish line, level select
+card, geometry tests — picks it up automatically.
+
+Each level declares a `slopeBudget`: how steep it is *allowed* to get, as a
+fraction of the rover's physical grip ceiling. That is the difficulty dial, and
+`levels_test` enforces it, so a course can never quietly become unclimbable.
 
 ### Tests
 

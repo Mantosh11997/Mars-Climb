@@ -26,8 +26,10 @@ void main() {
       overlayBuilderMap: {
         Overlays.hud: (_, g) => Hud(game: g),
         Overlays.controls: (_, g) => Controls(game: g),
-        Overlays.gameOver: (_, g) => OutcomeOverlay(game: g),
-        Overlays.levelComplete: (_, g) => OutcomeOverlay(game: g),
+        Overlays.gameOver: (_, g) =>
+            OutcomeOverlay(game: g, onNextLevel: (_) {}, onQuit: () {}),
+        Overlays.levelComplete: (_, g) =>
+            OutcomeOverlay(game: g, onNextLevel: (_) {}, onQuit: () {}),
       },
     ),
   );

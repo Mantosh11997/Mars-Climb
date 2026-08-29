@@ -3,8 +3,8 @@ import '../config.dart';
 /// A single, finite course.
 ///
 /// Everything that distinguishes one level from another lives here, so
-/// adding level 2 is a matter of writing another const - not touching the
-/// terrain, camera or vehicle code.
+/// adding a course is a matter of writing another const - no changes to
+/// the terrain, camera or vehicle code.
 class Level {
   const Level({
     required this.number,
@@ -12,8 +12,9 @@ class Level {
     required this.subtitle,
     required this.length,
     required this.seed,
-    this.amplitude = GameConfig.terrainAmplitude,
-    this.wavelength = GameConfig.terrainWavelength,
+    required this.amplitude,
+    required this.wavelength,
+    required this.slopeBudget,
     this.cellSpacing = GameConfig.cellSpacing,
     this.oxygenIdleDrain = GameConfig.oxygenIdleDrain,
     this.oxygenThrottleDrain = GameConfig.oxygenThrottleDrain,
@@ -29,11 +30,22 @@ class Level {
   /// Terrain seed. Change it and the whole course changes.
   final int seed;
 
-  /// Hill height (metres) and hill length (metres).
+  /// Hill height (metres) and hill length (metres). Steepness is roughly
+  /// amplitude / wavelength, so shrinking the wavelength bites harder than
+  /// raising the amplitude.
   final double amplitude;
   final double wavelength;
 
-  /// Average metres between energy cells.
+  /// How steep this course is *allowed* to get, as a fraction of the
+  /// rover's physical grip ceiling (see levels_test).
+  ///
+  /// This is the difficulty dial. 0.6 is a shakedown that never strands
+  /// you; 0.9 will punish a bad line and demands momentum. Above 1.0 the
+  /// course is literally unclimbable, and the test fails.
+  final double slopeBudget;
+
+  /// Average metres between energy cells. Longer courses need these to
+  /// keep the oxygen clock survivable.
   final double cellSpacing;
 
   final double oxygenIdleDrain;
@@ -57,8 +69,13 @@ class Level {
 }
 
 /// -------------------------------------------------------------------
-/// LEVEL 1
+/// THE COURSES
+///
+/// Ordered by difficulty. Each one is meant to feel different, not just
+/// longer: the wavelength sets the rhythm and the slopeBudget sets how
+/// much the course is allowed to fight you.
 /// -------------------------------------------------------------------
+
 const Level level1 = Level(
   number: 1,
   name: 'Acidalia Flats',
@@ -66,11 +83,62 @@ const Level level1 = Level(
       'air to get you into trouble.',
   length: 520,
   seed: 20260829,
-  amplitude: 4.9,
+  amplitude: 4.42,
   wavelength: 22.0,
+  slopeBudget: 0.62,
   cellSpacing: 16.0,
 );
 
-/// Every level in play order. Level 1 is the only finished course so far;
-/// append here and the rest of the game picks it up.
-const List<Level> levels = [level1];
+const Level level2 = Level(
+  number: 2,
+  name: 'Chryse Ripples',
+  subtitle: 'Short, choppy ridges that never let the suspension settle. '
+      'Keep the throttle honest or you will bounce off the line.',
+  length: 640,
+  seed: 771402,
+  amplitude: 3.63,
+  wavelength: 16.5,
+  slopeBudget: 0.74,
+  cellSpacing: 17.0,
+  oxygenIdleDrain: 1.8,
+);
+
+const Level level3 = Level(
+  number: 3,
+  name: 'Tharsis Rollers',
+  subtitle: 'Long, heavy swells. Carry speed over the crests and the rover '
+      'flies - land it nose-down and the helmet finds the regolith.',
+  length: 780,
+  seed: 5583019,
+  amplitude: 7.88,
+  wavelength: 38.0,
+  slopeBudget: 0.72,
+  cellSpacing: 19.0,
+  oxygenIdleDrain: 1.7,
+  oxygenThrottleDrain: 3.1,
+);
+
+const Level level4 = Level(
+  number: 4,
+  name: 'Olympus Ascent',
+  subtitle: 'The steep one. Tight walls of regolith with no room to build '
+      'a run-up. Stall on a face and the climb is over.',
+  length: 900,
+  seed: 41209773,
+  amplitude: 4.87,
+  wavelength: 19.0,
+  slopeBudget: 0.88,
+  cellSpacing: 15.0,
+  oxygenIdleDrain: 2.0,
+  oxygenThrottleDrain: 3.8,
+);
+
+/// Every level, in play order.
+const List<Level> levels = [level1, level2, level3, level4];
+
+/// The next course after [level], or null if it is the last one.
+Level? levelAfter(Level level) {
+  final i = levels.indexWhere((l) => l.number == level.number);
+  if (i < 0 || i + 1 >= levels.length) return null;
+  return levels[i + 1];
+}
