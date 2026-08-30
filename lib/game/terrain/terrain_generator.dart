@@ -21,15 +21,29 @@ class TerrainGenerator {
     final scale = _amplitudeScale(x);
     if (scale <= 0) return GameConfig.terrainBaseY;
 
-    final n = _noise.fbm(
+    // Detail: the bumps and ridges.
+    final detail = _noise.fbm(
       x / level.wavelength,
       octaves: GameConfig.terrainOctaves,
       persistence: GameConfig.terrainPersistence,
       lacunarity: GameConfig.terrainLacunarity,
     );
 
+    // Macro: a long wave underneath, which is what makes a climb a climb
+    // rather than a bump. Offset so it does not share lattice points with
+    // the detail noise and accidentally line up with it.
+    final macro = _noise.fbm(
+      x / (level.wavelength * level.macroWavelengthFactor) + 91.7,
+      octaves: 2,
+      persistence: 0.5,
+      lacunarity: 2.0,
+    );
+
+    final height =
+        detail * level.amplitude + macro * level.amplitude * level.macroScale;
+
     // Negative because up == -y.
-    return GameConfig.terrainBaseY - n * level.amplitude * scale;
+    return GameConfig.terrainBaseY - height * scale;
   }
 
   /// Hills ease in after the starting apron and ease back out before the
@@ -49,8 +63,11 @@ class TerrainGenerator {
       (surfaceY(x + eps) - surfaceY(x - eps)) / (2 * eps);
 
   /// The lowest (largest y) the ground ever gets on this course. Used to
-  /// decide when the rover has fallen out of the world.
-  double get lowestGroundY => GameConfig.terrainBaseY + level.amplitude;
+  /// decide when the rover has fallen out of the world. Must account for
+  /// the macro wave as well as the detail, or a deep valley reads as
+  /// falling off the map.
+  double get lowestGroundY =>
+      GameConfig.terrainBaseY + level.amplitude * (1 + level.macroScale);
 
   /// Forge2D rejects a chain whose adjacent vertices are closer than its
   /// linear slop (0.005 m), and `createChain` throws rather than skipping

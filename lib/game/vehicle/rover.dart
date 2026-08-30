@@ -247,17 +247,49 @@ class Rover extends BodyComponent {
       ..setMaxMotorTorque(torque);
   }
 
-  void _driveAll(double speed, double torque) {
-    if (vehicle.rearWheelDrive) {
-      _applyMotor(_rearJoint, speed, torque);
-    } else {
-      _applyMotor(_rearJoint, 0, 0);
+  /// Torque the engine can actually deliver at the current wheel speed.
+  ///
+  /// The joint motor is a speed servo: given a flat torque limit it simply
+  /// holds its setpoint up any slope it can grip, so hills never slow the
+  /// machine and the game plays itself. Fading torque out as the wheels
+  /// spin up is what makes a climb cost speed, and what makes a slope
+  /// steep enough to stall you on.
+  double _availableTorque(Wheel wheel) {
+    // The motor acts on the wheel's spin *relative to the chassis*, which
+    // is what the solver constrains - not its absolute angular velocity.
+    final relativeSpin =
+        (wheel.body.angularVelocity - body.angularVelocity).abs();
+    final t =
+        (relativeSpin / vehicle.engineMaxMotorSpeed).clamp(0.0, 1.0).toDouble();
+
+    final fade = 1.0 - math.pow(t, vehicle.powerCurveExponent).toDouble();
+    return vehicle.engineMaxTorque * fade.clamp(0.0, 1.0);
+  }
+
+  /// Quadratic air drag. Without it the servo would snap straight to its
+  /// setpoint; with it, top speed is where available torque meets drag,
+  /// so a headwind of a hill genuinely costs you.
+  void _applyDrag() {
+    final v = body.linearVelocity;
+    final speed = v.length;
+    if (speed < 0.2) return;
+    body.applyForce(v.normalized()..scale(-vehicle.dragCoefficient * speed * speed));
+  }
+
+  /// [torqueScale] lets reverse and braking reuse the same power curve at
+  /// reduced strength.
+  void _driveAll(double speed, {double torqueScale = 1.0, double? fixedTorque}) {
+    void drive(WheelJoint? joint, Wheel wheel, bool driven) {
+      if (!driven) {
+        _applyMotor(joint, 0, 0);
+        return;
+      }
+      final torque = fixedTorque ?? _availableTorque(wheel) * torqueScale;
+      _applyMotor(joint, speed, torque);
     }
-    if (vehicle.frontWheelDrive) {
-      _applyMotor(_frontJoint, speed, torque);
-    } else {
-      _applyMotor(_frontJoint, 0, 0);
-    }
+
+    drive(_rearJoint, rearWheel, vehicle.rearWheelDrive);
+    drive(_frontJoint, frontWheel, vehicle.frontWheelDrive);
   }
 
   @override
@@ -273,10 +305,7 @@ class Rover extends BodyComponent {
 
     switch (throttle) {
       case Throttle.forward:
-        _driveAll(
-          GameConfig.driveDirection * vehicle.engineMaxMotorSpeed,
-          vehicle.engineMaxTorque,
-        );
+        _driveAll(GameConfig.driveDirection * vehicle.engineMaxMotorSpeed);
         // Nose-up torque so hard acceleration pops a wheelie.
         body.applyTorque(
           GameConfig.driveDirection * -vehicle.chassisPitchTorque,
@@ -286,13 +315,13 @@ class Rover extends BodyComponent {
         // Rolling forward + BRAKE == braking. Stationary or rolling
         // backward + BRAKE == reverse.
         if (forwardSpeed > 1.0) {
-          _driveAll(0, GameConfig.brakeTorque);
+          _driveAll(0, fixedTorque: GameConfig.brakeTorque);
         } else {
           _driveAll(
             -GameConfig.driveDirection *
                 vehicle.engineMaxMotorSpeed *
                 GameConfig.reverseMotorSpeedFactor,
-            vehicle.engineMaxTorque * GameConfig.reverseTorqueFactor,
+            torqueScale: GameConfig.reverseTorqueFactor,
           );
           body.applyTorque(
             GameConfig.driveDirection * vehicle.chassisPitchTorque * 0.5,
@@ -301,8 +330,10 @@ class Rover extends BodyComponent {
 
       case Throttle.none:
         // Motors off - angular damping on the wheels does the coasting.
-        _driveAll(0, 0);
+        _driveAll(0, fixedTorque: 0);
     }
+
+    _applyDrag();
   }
 
   void teardown() {

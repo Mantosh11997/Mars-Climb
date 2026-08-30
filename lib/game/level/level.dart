@@ -17,6 +17,8 @@ class Level {
     required this.wavelength,
     required this.slopeBudget,
     required this.theme,
+    this.macroScale = 0.85,
+    this.macroWavelengthFactor = 5.0,
     this.cellSpacing = GameConfig.cellSpacing,
     this.oxygenIdleDrain = GameConfig.oxygenIdleDrain,
     this.oxygenThrottleDrain = GameConfig.oxygenThrottleDrain,
@@ -41,6 +43,15 @@ class Level {
   /// How steep this course is *allowed* to get, as a fraction of the
   /// rover's physical grip ceiling (see levels_test).
   ///
+  /// A second, much longer wave laid under the detail noise, as a fraction
+  /// of [amplitude]. This is what produces sustained climbs rather than a
+  /// field of ripples you can carry momentum straight over - without it a
+  /// course is just chop, and chop is trivial at speed.
+  final double macroScale;
+
+  /// How many times longer that underlying wave is than [wavelength].
+  final double macroWavelengthFactor;
+
   /// Measured against the *starter* machine's grip, so 1.0 means "right at
   /// the limit of what a Pathfinder can hold". Grippier machines can go
   /// beyond it and slippier ones cannot - levels_test reports which
@@ -90,8 +101,10 @@ const Level level1 = Level(
       'air to get you into trouble.',
   length: 520,
   seed: 20260829,
-  amplitude: 5.32,
+  amplitude: 5.02,
   wavelength: 22.0,
+  macroScale: 2.4,
+  macroWavelengthFactor: 8.0,
   slopeBudget: 0.68,
   theme: duskPlains,
   cellSpacing: 16.0,
@@ -104,8 +117,10 @@ const Level level2 = Level(
       'Keep the throttle honest or you will bounce off the line.',
   length: 640,
   seed: 771402,
-  amplitude: 4.38,
+  amplitude: 4.40,
   wavelength: 16.5,
+  macroScale: 3.0,
+  macroWavelengthFactor: 8.0,
   slopeBudget: 0.80,
   theme: noonBasin,
   cellSpacing: 17.0,
@@ -119,8 +134,10 @@ const Level level3 = Level(
       'flies - land it nose-down and the helmet finds the regolith.',
   length: 780,
   seed: 5583019,
-  amplitude: 9.50,
+  amplitude: 6.47,
   wavelength: 38.0,
+  macroScale: 3.2,
+  macroWavelengthFactor: 9.0,
   slopeBudget: 0.78,
   theme: dustStorm,
   cellSpacing: 19.0,
@@ -135,8 +152,10 @@ const Level level4 = Level(
       'a run-up. Stall on a face and the climb is over.',
   length: 900,
   seed: 41209773,
-  amplitude: 5.72,
+  amplitude: 6.08,
   wavelength: 19.0,
+  macroScale: 3.6,
+  macroWavelengthFactor: 7.0,
   slopeBudget: 0.92,
   theme: polarNight,
   cellSpacing: 15.0,

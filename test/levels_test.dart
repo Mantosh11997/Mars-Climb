@@ -133,6 +133,39 @@ void main() {
     });
   }
 
+  /// Steepest AVERAGE grade sustained over [window] metres.
+  ///
+  /// A single steep segment is just a bump you carry momentum over. What
+  /// actually makes a hill-climb hard is a long average grade, because
+  /// that is what bleeds speed against the engine's power curve.
+  double sustainedDeg(TerrainGenerator gen, Level level, double window) {
+    var best = 0.0;
+    for (var x = 0.0; x < level.finishX - window; x += 1.0) {
+      final rise = gen.surfaceY(x) - gen.surfaceY(x + window); // up is -y
+      best = math.max(best, math.atan(rise / window));
+    }
+    return best * 180 / math.pi;
+  }
+
+  test('every course has a real climb, not just chop', () {
+    for (final level in levels) {
+      final gen = TerrainGenerator(level);
+      final s30 = sustainedDeg(gen, level, 30);
+      final s60 = sustainedDeg(gen, level, 60);
+
+      // ignore: avoid_print
+      print('L${level.number} ${level.name.padRight(16)} '
+          'sustained 30m ${s30.toStringAsFixed(1)}deg  '
+          '60m ${s60.toStringAsFixed(1)}deg');
+
+      expect(s30, greaterThan(10.0),
+          reason: 'level ${level.number} has no sustained climb - a course '
+              'made only of short bumps plays itself at speed');
+      expect(s60, greaterThan(5.0),
+          reason: 'level ${level.number} has no long grade');
+    }
+  });
+
   test('which machines can clear which course', () {
     final clearable = <int, List<String>>{};
     for (final level in levels) {

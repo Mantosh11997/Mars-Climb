@@ -139,10 +139,16 @@ there would be no reason to drive the others.
 
 | # | Name | Length | Max grade | Relief | Theme | Character |
 |---|---|---|---|---|---|---|
-| 1 | Acidalia Flats | 520 m | 36° | 7 m | Dusk | Shakedown; rolling dunes |
-| 2 | Chryse Ripples | 640 m | 43° | 7 m | Noon | Short choppy ridges, never settles |
-| 3 | Tharsis Rollers | 780 m | 42° | 12 m | Dust storm | Long heavy swells, big airtime |
-| 4 | Olympus Ascent | 900 m | 49° | 9 m | Night | Steep walls, no room for a run-up |
+| 1 | Acidalia Flats | 520 m | 35° | 9 m | Dusk | Shakedown; rolling dunes |
+| 2 | Chryse Ripples | 640 m | 41° | 14 m | Noon | Short choppy ridges, never settles |
+| 3 | Tharsis Rollers | 780 m | 40° | 17 m | Dust storm | Long heavy swells, big airtime |
+| 4 | Olympus Ascent | 900 m | 47° | 23 m | Night | A genuine mountain |
+
+Terrain is two waves, not one: detail noise for bumps, plus a much longer
+`macroScale` wave underneath that produces **sustained climbs**. Without it a
+course is only chop, and chop is trivial at speed — you carry momentum straight
+over it. `levels_test` measures the steepest *average* grade over 30 m and 60 m
+windows and fails if a course has no real climb in it.
 
 `slopeBudget` is measured against the **starter machine's** grip, so 1.0 means
 "right at the limit of what a Pathfinder can hold". Grippier machines can go
@@ -246,6 +252,21 @@ alive around the rover and culls the rest. Each chunk sets Forge2D **ghost verti
 
 The first `terrainFlatRunway` metres are flat, and hill amplitude smoothstep-ramps
 in over `terrainRampDistance`, so the rover always gets a clean start.
+
+**The engine.** The joint motor is a *speed servo*: `motorSpeed` is a setpoint
+and `maxMotorTorque` a cap. With a flat cap the machine simply holds its target
+speed up any slope it can grip — hills stop mattering and the game plays itself.
+So available torque now fades as the wheels spin up:
+
+```
+torque = engineMaxTorque * (1 - (spin / maxSpin) ^ powerCurveExponent)
+```
+
+Full pull from a standstill, nothing left at the cap. Quadratic drag on the
+chassis sets the actual top speed — the machine accelerates until torque meets
+drag — so a climb genuinely costs speed and a steep enough grade stalls you.
+`powerCurveExponent` is the engine's character: 1.3 is peaky and light, 3.2 is a
+big lazy diesel.
 
 **The rover** is a chassis box with two circle wheels on `WheelJoint`s (spring
 suspension + motors). Drive is AWD by default — toggle `rearWheelDrive` /

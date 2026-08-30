@@ -41,6 +41,8 @@ class Vehicle {
     this.wheelAngularDamping = GameConfig.wheelAngularDamping,
     this.rearWheelDrive = true,
     this.frontWheelDrive = true,
+    this.powerCurveExponent = 2.0,
+    this.dragCoefficient = 0.9,
   }) : spriteOffset = spriteOffset ?? Vector2.zero();
 
   // --- identity -------------------------------------------------------
@@ -103,6 +105,27 @@ class Vehicle {
   /// Nose-lift under throttle - the wheelie.
   final double chassisPitchTorque;
 
+  /// Shape of the torque fall-off as the wheels spin up.
+  ///
+  /// The motor is a speed servo, so with a flat torque limit the machine
+  /// holds its target speed up any slope it can grip - hills stop mattering
+  /// and the game plays itself. Real engines have far less to give at high
+  /// rpm, so available torque falls from full at a standstill to nothing at
+  /// the speed cap:
+  ///
+  ///   torque = engineMaxTorque * (1 - (spin / maxSpin)^exponent)
+  ///
+  /// 1.0 is a linear fade, 2.0 keeps low-end grunt and drops off sharply
+  /// near the top, 3.0+ feels like a big lazy engine.
+  final double powerCurveExponent;
+
+  /// Quadratic drag on the chassis, in N per (m/s)^2.
+  ///
+  /// This is what actually sets the top speed on the flat: the machine
+  /// accelerates until available torque equals drag. Without it the servo
+  /// would simply snap to its setpoint.
+  final double dragCoefficient;
+
   final bool rearWheelDrive;
   final bool frontWheelDrive;
 
@@ -145,12 +168,14 @@ final Vehicle rover = Vehicle(
   chassisDensity: 1.0,
   wheelDensity: 1.1,
   headDensity: 0.6,
-  wheelFriction: 2.4,
+  wheelFriction: 2.1,
   suspensionFrequencyHz: 5.0,
   suspensionDampingRatio: 0.65,
   engineMaxTorque: 62,
   engineMaxMotorSpeed: 19,
   chassisPitchTorque: 34,
+  powerCurveExponent: 2.0,
+  dragCoefficient: 0.9,
 );
 
 /// Light and quick, but it skates on loose ground and has little torque
@@ -173,12 +198,15 @@ final Vehicle scout = Vehicle(
   chassisDensity: 0.62,
   wheelDensity: 0.75,
   headDensity: 0.7,
-  wheelFriction: 1.5,
+  wheelFriction: 1.3,
   suspensionFrequencyHz: 6.4,
   suspensionDampingRatio: 0.55,
   engineMaxTorque: 40,
   engineMaxMotorSpeed: 29,
   chassisPitchTorque: 26,
+  // Peaky and light: revs out fast, little low-end shove.
+  powerCurveExponent: 1.3,
+  dragCoefficient: 0.55,
 );
 
 /// Enormous torque and grip, but heavy and slow. Climbs anything.
@@ -200,12 +228,15 @@ final Vehicle hauler = Vehicle(
   chassisDensity: 2.1,
   wheelDensity: 1.6,
   headDensity: 0.45,
-  wheelFriction: 3.1,
+  wheelFriction: 2.9,
   suspensionFrequencyHz: 4.2,
   suspensionDampingRatio: 0.8,
   engineMaxTorque: 128,
   engineMaxMotorSpeed: 10,
   chassisPitchTorque: 20,
+  // A big lazy diesel: enormous grunt that holds almost to the cap.
+  powerCurveExponent: 3.2,
+  dragCoefficient: 2.4,
 );
 
 /// Huge suspension travel and a soft spring. Built to land from height.
@@ -225,13 +256,15 @@ final Vehicle jumper = Vehicle(
   chassisDensity: 0.95,
   wheelDensity: 1.0,
   headDensity: 0.62,
-  wheelFriction: 2.2,
+  wheelFriction: 2.0,
   // Soft and slow to rebound - that is the whole point of this machine.
   suspensionFrequencyHz: 3.1,
   suspensionDampingRatio: 0.42,
   engineMaxTorque: 70,
   engineMaxMotorSpeed: 20,
   chassisPitchTorque: 44,
+  powerCurveExponent: 1.8,
+  dragCoefficient: 1.0,
 );
 
 /// Long wheelbase, low centre of gravity, very hard to flip - but the
@@ -253,12 +286,14 @@ final Vehicle crawler = Vehicle(
   wheelDensity: 1.3,
   // Light helmet mass and a long wheelbase: this is the stable one.
   headDensity: 0.25,
-  wheelFriction: 2.9,
+  wheelFriction: 2.7,
   suspensionFrequencyHz: 5.6,
   suspensionDampingRatio: 0.78,
   engineMaxTorque: 96,
   engineMaxMotorSpeed: 14,
   chassisPitchTorque: 16,
+  powerCurveExponent: 2.8,
+  dragCoefficient: 1.7,
 );
 
 /// Every vehicle, in garage order.
