@@ -27,20 +27,10 @@ import numpy as np
 from PIL import Image
 
 ASSETS = Path(__file__).resolve().parent.parent / "assets" / "images"
-SPRITES = [
-    "car_body.png",
-    "wheel.png",
-    "character.png",
-    "scout_body.png",
-    "scout_wheel.png",
-    "hauler_body.png",
-    "hauler_wheel.png",
-    "jumper_body.png",
-    "jumper_wheel.png",
-    "crawler_body.png",
-    "crawler_wheel.png",
-    "fuel_can.png",
-]
+# Every sprite in the folder. A hand-maintained list would silently skip
+# newly added machines, and a machine with a black fringe is exactly the
+# kind of thing nobody notices until it ships.
+SPRITES = sorted(p.name for p in ASSETS.glob("*.png"))
 
 # How far to push the art colour into the transparent margin, in pixels.
 # 16 is comfortably more than bilinear (1px) or a few mip levels need.
