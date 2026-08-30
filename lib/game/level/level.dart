@@ -41,9 +41,10 @@ class Level {
   /// How steep this course is *allowed* to get, as a fraction of the
   /// rover's physical grip ceiling (see levels_test).
   ///
-  /// This is the difficulty dial. 0.6 is a shakedown that never strands
-  /// you; 0.9 will punish a bad line and demands momentum. Above 1.0 the
-  /// course is literally unclimbable, and the test fails.
+  /// Measured against the *starter* machine's grip, so 1.0 means "right at
+  /// the limit of what a Pathfinder can hold". Grippier machines can go
+  /// beyond it and slippier ones cannot - levels_test reports which
+  /// machines can clear each course.
   final double slopeBudget;
 
   /// Sky, scenery and ground palette. Each course gets its own so no two
@@ -89,9 +90,9 @@ const Level level1 = Level(
       'air to get you into trouble.',
   length: 520,
   seed: 20260829,
-  amplitude: 4.42,
+  amplitude: 5.32,
   wavelength: 22.0,
-  slopeBudget: 0.62,
+  slopeBudget: 0.68,
   theme: duskPlains,
   cellSpacing: 16.0,
 );
@@ -103,12 +104,12 @@ const Level level2 = Level(
       'Keep the throttle honest or you will bounce off the line.',
   length: 640,
   seed: 771402,
-  amplitude: 3.63,
+  amplitude: 4.38,
   wavelength: 16.5,
-  slopeBudget: 0.74,
+  slopeBudget: 0.80,
   theme: noonBasin,
   cellSpacing: 17.0,
-  oxygenIdleDrain: 1.8,
+  oxygenIdleDrain: 2.0,
 );
 
 const Level level3 = Level(
@@ -118,13 +119,13 @@ const Level level3 = Level(
       'flies - land it nose-down and the helmet finds the regolith.',
   length: 780,
   seed: 5583019,
-  amplitude: 7.88,
+  amplitude: 9.50,
   wavelength: 38.0,
-  slopeBudget: 0.72,
+  slopeBudget: 0.78,
   theme: dustStorm,
   cellSpacing: 19.0,
-  oxygenIdleDrain: 1.7,
-  oxygenThrottleDrain: 3.1,
+  oxygenIdleDrain: 1.9,
+  oxygenThrottleDrain: 3.4,
 );
 
 const Level level4 = Level(
@@ -134,13 +135,13 @@ const Level level4 = Level(
       'a run-up. Stall on a face and the climb is over.',
   length: 900,
   seed: 41209773,
-  amplitude: 4.87,
+  amplitude: 5.72,
   wavelength: 19.0,
-  slopeBudget: 0.88,
+  slopeBudget: 0.92,
   theme: polarNight,
   cellSpacing: 15.0,
-  oxygenIdleDrain: 2.0,
-  oxygenThrottleDrain: 3.8,
+  oxygenIdleDrain: 2.2,
+  oxygenThrottleDrain: 4.0,
 );
 
 /// Every level, in play order.

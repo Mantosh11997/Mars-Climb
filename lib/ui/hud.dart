@@ -24,8 +24,8 @@ class Hud extends StatelessWidget {
                 Expanded(child: _OxygenGauge(fraction: s.oxygenFraction)),
                 const SizedBox(width: 14),
                 _Readout(
-                  icon: Icons.hexagon_outlined,
-                  label: 'CELLS',
+                  icon: Icons.local_gas_station_outlined,
+                  label: 'CANS',
                   value: '${s.cells}',
                 ),
                 const SizedBox(width: 10),
@@ -74,7 +74,7 @@ class _OxygenGauge extends StatelessWidget {
               const Icon(Icons.bolt, size: 15, color: Colors.white70),
               const SizedBox(width: 5),
               const Text(
-                'FUEL CELL / O₂',
+                'FUEL',
                 style: _labelStyle,
               ),
               const Spacer(),

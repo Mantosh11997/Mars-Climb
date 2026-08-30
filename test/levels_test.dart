@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mars_climb/game/config.dart';
 import 'package:mars_climb/game/level/level.dart';
 import 'package:mars_climb/game/terrain/terrain_generator.dart';
+import 'package:mars_climb/game/vehicle/vehicle.dart' as veh;
 
 /// Geometry checks for every course.
 ///
@@ -14,12 +15,25 @@ import 'package:mars_climb/game/terrain/terrain_generator.dart';
 void main() {
   /// Box2D mixes two fixtures' friction as sqrt(a*b). A driven wheel holds
   /// a slope while tan(angle) <= that coefficient, so this is the hard
-  /// physical ceiling for a standing start on any course.
-  final gripCeilingDeg = math.atan(
-        math.sqrt(GameConfig.wheelFriction * GameConfig.terrainFriction),
-      ) *
+  /// physical ceiling for a standing start - and it is per machine, since
+  /// grip is the biggest difference between them.
+  double ceilingOf(veh.Vehicle v) =>
+      math.atan(math.sqrt(v.wheelFriction * GameConfig.terrainFriction)) *
       180 /
       math.pi;
+
+  /// Courses are budgeted against the starter machine.
+  final gripCeilingDeg = ceilingOf(veh.rover);
+
+  double steepestOn(TerrainGenerator gen, Level level) {
+    const step = GameConfig.terrainPointSpacing;
+    var worst = 0.0;
+    for (var x = 0.0; x < level.finishX; x += step) {
+      final dy = gen.surfaceY(x + step) - gen.surfaceY(x);
+      worst = math.max(worst, math.atan(dy.abs() / step) * 180 / math.pi);
+    }
+    return worst;
+  }
 
   test('grip ceiling', () {
     // ignore: avoid_print
@@ -118,6 +132,31 @@ void main() {
       });
     });
   }
+
+  test('which machines can clear which course', () {
+    final clearable = <int, List<String>>{};
+    for (final level in levels) {
+      final steepest = steepestOn(TerrainGenerator(level), level);
+      clearable[level.number] = [
+        for (final v in veh.vehicles)
+          if (ceilingOf(v) > steepest) v.name,
+      ];
+      // ignore: avoid_print
+      print('L${level.number} ${level.name.padRight(16)} '
+          '${steepest.toStringAsFixed(1)}deg -> ${clearable[level.number]}');
+    }
+
+    // The shakedown must not lock anyone out.
+    expect(clearable[1]!.length, veh.vehicles.length,
+        reason: 'level 1 has to be clearable on every machine');
+
+    // Later courses may exclude the slippery ones - that is the point of
+    // having a garage - but never come down to a single option.
+    for (final level in levels) {
+      expect(clearable[level.number]!.length, greaterThanOrEqualTo(2),
+          reason: 'level ${level.number} leaves too few machines viable');
+    }
+  });
 
   test('difficulty rises across the campaign', () {
     for (var i = 1; i < levels.length; i++) {

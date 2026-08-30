@@ -105,7 +105,9 @@ lib/
 │   └── world/
 │       └── mars_backdrop.dart         Sky gradient, sun, stars, 3 parallax bands
 └── ui/
-    ├── home_screen.dart               Garage: machine rail + course rail
+    ├── machine_select_screen.dart     Step 1: pick a machine (app home)
+    ├── course_select_screen.dart      Step 2: pick a course
+    ├── vehicle_preview.dart           Chassis with its wheels fitted
     ├── vehicle_stats.dart             Normalised stat bars across the roster
     ├── level_profile.dart             Draws a course's real silhouette
     ├── game_screen.dart               Hosts one run of one course
@@ -137,10 +139,16 @@ there would be no reason to drive the others.
 
 | # | Name | Length | Max grade | Relief | Theme | Character |
 |---|---|---|---|---|---|---|
-| 1 | Acidalia Flats | 520 m | 31° | 6 m | Dusk | Shakedown; forgiving rolling dunes |
-| 2 | Chryse Ripples | 640 m | 37° | 6 m | Noon | Short choppy ridges, never settles |
-| 3 | Tharsis Rollers | 780 m | 36° | 10 m | Dust storm | Long heavy swells, big airtime |
-| 4 | Olympus Ascent | 900 m | 44° | 7 m | Night | Steep walls, no room for a run-up |
+| 1 | Acidalia Flats | 520 m | 36° | 7 m | Dusk | Shakedown; rolling dunes |
+| 2 | Chryse Ripples | 640 m | 43° | 7 m | Noon | Short choppy ridges, never settles |
+| 3 | Tharsis Rollers | 780 m | 42° | 12 m | Dust storm | Long heavy swells, big airtime |
+| 4 | Olympus Ascent | 900 m | 49° | 9 m | Night | Steep walls, no room for a run-up |
+
+`slopeBudget` is measured against the **starter machine's** grip, so 1.0 means
+"right at the limit of what a Pathfinder can hold". Grippier machines can go
+beyond it; slippier ones cannot. `levels_test` prints which machines can clear
+each course and fails if level 1 locks anyone out or any course leaves fewer
+than two machines viable.
 
 Every course carries its own `LevelTheme` — sky gradient, three scenery bands,
 ground, sun and star density — so no two read as the same place. The one rule a

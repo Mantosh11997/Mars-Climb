@@ -39,6 +39,7 @@ SPRITES = [
     "jumper_wheel.png",
     "crawler_body.png",
     "crawler_wheel.png",
+    "fuel_can.png",
 ]
 
 # How far to push the art colour into the transparent margin, in pixels.

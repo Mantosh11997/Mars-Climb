@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import 'package:flame/components.dart';
 import 'package:flame_forge2d/flame_forge2d.dart';
 
-import 'collectibles/energy_cell.dart';
+import 'collectibles/fuel_can.dart';
 import 'config.dart';
 import 'level/finish_line.dart';
 import 'level/level.dart';
@@ -46,6 +46,7 @@ class MarsClimbGame extends Forge2DGame {
   late final Sprite _chassisSprite;
   late final Sprite _wheelSprite;
   late final Sprite _driverSprite;
+  late final Sprite _canSprite;
 
   bool _built = false;
   bool _rebuildPending = false;
@@ -57,6 +58,7 @@ class MarsClimbGame extends Forge2DGame {
     _chassisSprite = await loadSprite(vehicle.bodyAsset);
     _wheelSprite = await loadSprite(vehicle.wheelAsset);
     _driverSprite = await loadSprite('character.png');
+    _canSprite = await loadSprite('fuel_can.png');
 
     camera.viewfinder.anchor = Anchor.center;
     _applyZoom();
@@ -116,6 +118,7 @@ class MarsClimbGame extends Forge2DGame {
     terrain = TerrainManager(
       generator: generator,
       onCellCollected: _onCellCollected,
+      canSprite: _canSprite,
     );
     world.add(terrain);
     // Generate the ground before the rover drops onto it.
@@ -267,5 +270,5 @@ class MarsClimbGame extends Forge2DGame {
     _cameraTarget.position += (desired - _cameraTarget.position) * t;
   }
 
-  void _onCellCollected(EnergyCell cell) => state.collectCell();
+  void _onCellCollected(FuelCan cell) => state.collectCell();
 }

@@ -109,7 +109,13 @@ class Vehicle {
   Vector2 get driverSize => Vector2(1.38, 1.41) * driverScale;
 
   /// Rough top speed in m/s, for the garage readout.
+  ///
+  /// These were originally set for ~24 m/s (88 km/h), which let any
+  /// machine simply rocket over the terrain and made every course feel
+  /// flat. A hill-climb wants 7-15 m/s so the hills actually push back.
   double get topSpeed => engineMaxMotorSpeed * wheelRadius;
+
+  double get topSpeedKmh => topSpeed * 3.6;
 }
 
 /// -------------------------------------------------------------------
@@ -143,7 +149,7 @@ final Vehicle rover = Vehicle(
   suspensionFrequencyHz: 5.0,
   suspensionDampingRatio: 0.65,
   engineMaxTorque: 62,
-  engineMaxMotorSpeed: 42,
+  engineMaxMotorSpeed: 19,
   chassisPitchTorque: 34,
 );
 
@@ -171,7 +177,7 @@ final Vehicle scout = Vehicle(
   suspensionFrequencyHz: 6.4,
   suspensionDampingRatio: 0.55,
   engineMaxTorque: 40,
-  engineMaxMotorSpeed: 62,
+  engineMaxMotorSpeed: 29,
   chassisPitchTorque: 26,
 );
 
@@ -198,7 +204,7 @@ final Vehicle hauler = Vehicle(
   suspensionFrequencyHz: 4.2,
   suspensionDampingRatio: 0.8,
   engineMaxTorque: 128,
-  engineMaxMotorSpeed: 26,
+  engineMaxMotorSpeed: 10,
   chassisPitchTorque: 20,
 );
 
@@ -224,7 +230,7 @@ final Vehicle jumper = Vehicle(
   suspensionFrequencyHz: 3.1,
   suspensionDampingRatio: 0.42,
   engineMaxTorque: 70,
-  engineMaxMotorSpeed: 48,
+  engineMaxMotorSpeed: 20,
   chassisPitchTorque: 44,
 );
 
@@ -251,7 +257,7 @@ final Vehicle crawler = Vehicle(
   suspensionFrequencyHz: 5.6,
   suspensionDampingRatio: 0.78,
   engineMaxTorque: 96,
-  engineMaxMotorSpeed: 32,
+  engineMaxMotorSpeed: 14,
   chassisPitchTorque: 16,
 );
 

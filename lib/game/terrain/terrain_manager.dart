@@ -1,6 +1,6 @@
 import 'package:flame/components.dart';
 
-import '../collectibles/energy_cell.dart';
+import '../collectibles/fuel_can.dart';
 import '../config.dart';
 import 'noise.dart';
 import 'terrain_chunk.dart';
@@ -12,16 +12,23 @@ import 'terrain_generator.dart';
 /// Chunks and collectibles are children of this component, so tearing the
 /// manager down tears the whole world down with it.
 class TerrainManager extends Component {
-  TerrainManager({required this.generator, required this.onCellCollected});
+  TerrainManager({
+    required this.generator,
+    required this.onCellCollected,
+    required this.canSprite,
+  });
 
   final TerrainGenerator generator;
 
   /// Wired into every cell at spawn time, so the manager owns the plumbing
   /// and the game loop never has to scan for new pickups.
-  final void Function(EnergyCell cell) onCellCollected;
+  final void Function(FuelCan can) onCellCollected;
+
+  /// The pickup art, loaded once by the game and shared by every can.
+  final Sprite canSprite;
 
   final Map<int, TerrainChunk> _chunks = {};
-  final Map<int, List<EnergyCell>> _cells = {};
+  final Map<int, List<FuelCan>> _cells = {};
 
   /// Ids of cells the player has already banked. Chunk generation is
   /// deterministic, so without this a culled-and-restreamed chunk would
@@ -72,7 +79,7 @@ class TerrainManager extends Component {
 
   void _removeChunk(int index) {
     _chunks.remove(index)?.removeFromParent();
-    for (final cell in _cells.remove(index) ?? const <EnergyCell>[]) {
+    for (final cell in _cells.remove(index) ?? const <FuelCan>[]) {
       // A cell already collected has removed itself; removing twice is a
       // no-op in Flame, so this stays safe.
       cell.removeFromParent();
@@ -82,7 +89,7 @@ class TerrainManager extends Component {
   /// Deterministic per-chunk placement, derived from the chunk index, so a
   /// culled-and-restreamed chunk rebuilds the identical layout. Cells
   /// already banked are filtered out via [_collected].
-  List<EnergyCell> _spawnCellsFor(int index) {
+  List<FuelCan> _spawnCellsFor(int index) {
     final startX = index * GameConfig.terrainChunkWidth;
     final endX = startX + GameConfig.terrainChunkWidth;
 
@@ -91,7 +98,7 @@ class TerrainManager extends Component {
     if (startX >= generator.level.finishX) return const [];
 
     final rng = SeededRandom(generator.level.seed ^ (index * 92821));
-    final cells = <EnergyCell>[];
+    final cells = <FuelCan>[];
 
     final spacing = generator.level.cellSpacing;
 
@@ -104,7 +111,7 @@ class TerrainManager extends Component {
           !_collected.contains(id)) {
         final y = generator.surfaceY(x) - GameConfig.cellHoverHeight;
         cells.add(
-          EnergyCell(spawn: Vector2(x, y), id: id)
+          FuelCan(spawn: Vector2(x, y), id: id, sprite: canSprite)
             ..onCollected = _handleCollected,
         );
       }
@@ -115,7 +122,7 @@ class TerrainManager extends Component {
     return cells;
   }
 
-  void _handleCollected(EnergyCell cell) {
+  void _handleCollected(FuelCan cell) {
     _collected.add(cell.id);
     onCellCollected(cell);
   }
