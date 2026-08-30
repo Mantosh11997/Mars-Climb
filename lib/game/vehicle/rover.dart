@@ -40,12 +40,11 @@ class Rover extends BodyComponent {
   final Sprite driverSprite;
   final void Function() onHeadImpact;
 
-  late final Wheel rearWheel;
-  late final Wheel frontWheel;
+  /// One entry per [Vehicle.wheels], in the same order.
+  late final List<Wheel> wheels;
   late final DriverHead head;
 
-  WheelJoint? _rearJoint;
-  WheelJoint? _frontJoint;
+  final List<WheelJoint> _joints = [];
 
   Throttle throttle = Throttle.none;
 
@@ -154,18 +153,15 @@ class Rover extends BodyComponent {
     );
 
     // --- Wheels --------------------------------------------------------
-    rearWheel = Wheel(
-      spawn: spawn + vehicle.rearAnchor,
-      sprite: wheelSprite,
-      isFront: false,
-      vehicle: vehicle,
-    );
-    frontWheel = Wheel(
-      spawn: spawn + vehicle.frontAnchor,
-      sprite: wheelSprite,
-      isFront: true,
-      vehicle: vehicle,
-    );
+    wheels = [
+      for (final mount in vehicle.wheels)
+        Wheel(
+          spawn: spawn + mount.anchor,
+          sprite: wheelSprite,
+          mount: mount,
+          vehicle: vehicle,
+        ),
+    ];
 
     head = DriverHead(
       spawn: spawn + vehicle.headOffset,
@@ -178,21 +174,19 @@ class Rover extends BodyComponent {
     // mount queue is drained in update(), which can't run while onLoad is
     // still pending), so we fire-and-forget the adds and build the joints
     // lazily on the first tick where everything is ready.
-    parent!.addAll([rearWheel, frontWheel, head]);
+    parent!.addAll([...wheels, head]);
   }
 
   bool _jointsBuilt = false;
 
   /// True once the chassis, both wheels and the head all have live bodies.
   bool get _partsReady =>
-      isMounted &&
-      rearWheel.isMounted &&
-      frontWheel.isMounted &&
-      head.isMounted;
+      isMounted && head.isMounted && wheels.every((w) => w.isMounted);
 
   void _buildJoints() {
-    _rearJoint = _attachWheel(rearWheel);
-    _frontJoint = _attachWheel(frontWheel);
+    _joints
+      ..clear()
+      ..addAll(wheels.map(_attachWheel));
     _weldHead();
     _jointsBuilt = true;
   }
@@ -278,18 +272,26 @@ class Rover extends BodyComponent {
 
   /// [torqueScale] lets reverse and braking reuse the same power curve at
   /// reduced strength.
+  ///
+  /// Engine torque is split across the driven wheels rather than handed to
+  /// each in full - otherwise a six-wheeler would have three times the
+  /// shove of a bike from the same engine.
   void _driveAll(double speed, {double torqueScale = 1.0, double? fixedTorque}) {
-    void drive(WheelJoint? joint, Wheel wheel, bool driven) {
-      if (!driven) {
+    final drivenCount = wheels.where((w) => w.mount.driven).length;
+    final share = drivenCount == 0 ? 1.0 : 1.0 / drivenCount;
+
+    for (var i = 0; i < wheels.length; i++) {
+      final wheel = wheels[i];
+      final joint = i < _joints.length ? _joints[i] : null;
+
+      if (!wheel.mount.driven) {
         _applyMotor(joint, 0, 0);
-        return;
+        continue;
       }
-      final torque = fixedTorque ?? _availableTorque(wheel) * torqueScale;
+      final torque = fixedTorque ??
+          _availableTorque(wheel) * torqueScale * share * wheels.length;
       _applyMotor(joint, speed, torque);
     }
-
-    drive(_rearJoint, rearWheel, vehicle.rearWheelDrive);
-    drive(_frontJoint, frontWheel, vehicle.frontWheelDrive);
   }
 
   @override
@@ -337,8 +339,9 @@ class Rover extends BodyComponent {
   }
 
   void teardown() {
-    rearWheel.removeFromParent();
-    frontWheel.removeFromParent();
+    for (final wheel in wheels) {
+      wheel.removeFromParent();
+    }
     head.removeFromParent();
     removeFromParent();
   }

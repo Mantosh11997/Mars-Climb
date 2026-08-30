@@ -2,6 +2,31 @@ import 'package:flame/components.dart';
 
 import '../config.dart';
 
+/// Where one wheel sits on a machine, and how it behaves.
+///
+/// A machine carries a list of these rather than a fixed front/rear pair,
+/// so a bike, a trike and a six-wheeler are all the same code.
+class WheelMount {
+  const WheelMount({
+    required this.anchor,
+    required this.radius,
+    this.driven = true,
+    this.spriteScale = 1.088,
+  });
+
+  /// Position in chassis-local metres, measured off the art.
+  final Vector2 anchor;
+
+  final double radius;
+
+  /// Whether the engine drives this wheel.
+  final bool driven;
+
+  /// Drawn diameter is radius * 2 * this. The tyre art fills about 92% of
+  /// its square canvas, hence the default just over 1.
+  final double spriteScale;
+}
+
 /// One drivable machine.
 ///
 /// Mirrors [Level]: everything that makes a vehicle feel different lives
@@ -20,9 +45,7 @@ class Vehicle {
     required this.wheelAsset,
     required this.spriteSize,
     required this.chassisSize,
-    required this.wheelRadius,
-    required this.rearAnchor,
-    required this.frontAnchor,
+    required this.wheels,
     required this.driverOffset,
     required this.headOffset,
     required this.engineMaxTorque,
@@ -37,10 +60,7 @@ class Vehicle {
     Vector2? spriteOffset,
     this.driverScale = 1.0,
     this.headRadius = 0.31,
-    this.wheelSpriteScale = 1.088,
     this.wheelAngularDamping = GameConfig.wheelAngularDamping,
-    this.rearWheelDrive = true,
-    this.frontWheelDrive = true,
     this.powerCurveExponent = 2.0,
     this.dragCoefficient = 0.9,
   }) : spriteOffset = spriteOffset ?? Vector2.zero();
@@ -66,15 +86,10 @@ class Vehicle {
   /// Collision box for the chassis.
   final Vector2 chassisSize;
 
-  final double wheelRadius;
-
-  /// Drawn wheel diameter is wheelRadius * 2 * this. The tyre art fills
-  /// about 92% of its square canvas, hence the default just over 1.
-  final double wheelSpriteScale;
-
-  /// Wheel positions in chassis-local space, measured off the art.
-  final Vector2 rearAnchor;
-  final Vector2 frontAnchor;
+  /// Every wheel on the machine, in any order. Two for a bike, three for
+  /// a trike, six for a hauler - the physics and the garage both just
+  /// iterate.
+  final List<WheelMount> wheels;
 
   // --- driver ---------------------------------------------------------
 
@@ -126,17 +141,38 @@ class Vehicle {
   /// would simply snap to its setpoint.
   final double dragCoefficient;
 
-  final bool rearWheelDrive;
-  final bool frontWheelDrive;
-
   Vector2 get driverSize => Vector2(1.38, 1.41) * driverScale;
+
+  int get wheelCount => wheels.length;
+
+  /// Frontmost and rearmost wheels, used for the wheelbase readout and to
+  /// place the machine on the ground at spawn.
+  WheelMount get rearmost =>
+      wheels.reduce((a, b) => a.anchor.x <= b.anchor.x ? a : b);
+  WheelMount get frontmost =>
+      wheels.reduce((a, b) => a.anchor.x >= b.anchor.x ? a : b);
+
+  double get wheelbase => frontmost.anchor.x - rearmost.anchor.x;
+
+  /// Deepest point any wheel reaches below the chassis centre - what the
+  /// spawn height has to clear.
+  double get lowestWheelExtent => wheels
+      .map((w) => w.anchor.y + w.radius)
+      .reduce((a, b) => a > b ? a : b);
+
+  /// Representative radius for the speed readout.
+  double get driveRadius {
+    final driven = wheels.where((w) => w.driven);
+    final set = driven.isEmpty ? wheels : driven;
+    return set.map((w) => w.radius).reduce((a, b) => a + b) / set.length;
+  }
 
   /// Rough top speed in m/s, for the garage readout.
   ///
   /// These were originally set for ~24 m/s (88 km/h), which let any
   /// machine simply rocket over the terrain and made every course feel
   /// flat. A hill-climb wants 7-15 m/s so the hills actually push back.
-  double get topSpeed => engineMaxMotorSpeed * wheelRadius;
+  double get topSpeed => engineMaxMotorSpeed * driveRadius;
 
   double get topSpeedKmh => topSpeed * 3.6;
 }
@@ -160,9 +196,10 @@ final Vehicle rover = Vehicle(
   spriteSize: Vector2(4.6, 3.07),
   spriteOffset: Vector2(0, -0.15),
   chassisSize: Vector2(3.4, 1.05),
-  wheelRadius: 0.58,
-  rearAnchor: Vector2(-1.05, 0.69),
-  frontAnchor: Vector2(1.46, 0.69),
+  wheels: [
+    WheelMount(anchor: Vector2(-1.05, 0.69), radius: 0.58),
+    WheelMount(anchor: Vector2(1.46, 0.69), radius: 0.58),
+  ],
   driverOffset: Vector2(0.10, -0.40),
   headOffset: Vector2(-0.14, -0.82),
   chassisDensity: 1.0,
@@ -188,9 +225,10 @@ final Vehicle scout = Vehicle(
   wheelAsset: 'scout_wheel.png',
   spriteSize: Vector2(4.3, 2.87),
   chassisSize: Vector2(3.0, 0.85),
-  wheelRadius: 0.49,
-  rearAnchor: Vector2(-1.31, 0.63),
-  frontAnchor: Vector2(1.33, 0.63),
+  wheels: [
+    WheelMount(anchor: Vector2(-1.31, 0.63), radius: 0.49),
+    WheelMount(anchor: Vector2(1.33, 0.63), radius: 0.49),
+  ],
   driverOffset: Vector2(-0.30, -0.30),
   headOffset: Vector2(-0.44, -0.74),
   driverScale: 0.92,
@@ -218,10 +256,10 @@ final Vehicle hauler = Vehicle(
   wheelAsset: 'hauler_wheel.png',
   spriteSize: Vector2(5.4, 3.6),
   chassisSize: Vector2(4.0, 1.35),
-  wheelRadius: 0.745,
-  wheelSpriteScale: 1.087,
-  rearAnchor: Vector2(-1.57, 0.65),
-  frontAnchor: Vector2(1.35, 0.65),
+  wheels: [
+    WheelMount(anchor: Vector2(-1.57, 0.65), radius: 0.745, spriteScale: 1.087),
+    WheelMount(anchor: Vector2(1.35, 0.65), radius: 0.745, spriteScale: 1.087),
+  ],
   driverOffset: Vector2(0.62, -0.62),
   headOffset: Vector2(0.48, -1.06),
   driverScale: 1.0,
@@ -248,9 +286,10 @@ final Vehicle jumper = Vehicle(
   wheelAsset: 'jumper_wheel.png',
   spriteSize: Vector2(5.0, 3.33),
   chassisSize: Vector2(3.5, 1.0),
-  wheelRadius: 0.598,
-  rearAnchor: Vector2(-1.67, 0.76),
-  frontAnchor: Vector2(1.73, 0.76),
+  wheels: [
+    WheelMount(anchor: Vector2(-1.67, 0.76), radius: 0.598),
+    WheelMount(anchor: Vector2(1.73, 0.76), radius: 0.598),
+  ],
   driverOffset: Vector2(-0.28, -0.48),
   headOffset: Vector2(-0.42, -0.92),
   chassisDensity: 0.95,
@@ -277,9 +316,10 @@ final Vehicle crawler = Vehicle(
   wheelAsset: 'crawler_wheel.png',
   spriteSize: Vector2(5.6, 3.73),
   chassisSize: Vector2(4.2, 1.0),
-  wheelRadius: 0.592,
-  rearAnchor: Vector2(-2.02, 0.65),
-  frontAnchor: Vector2(2.14, 0.65),
+  wheels: [
+    WheelMount(anchor: Vector2(-2.02, 0.65), radius: 0.592),
+    WheelMount(anchor: Vector2(2.14, 0.65), radius: 0.592),
+  ],
   driverOffset: Vector2(-0.32, -0.40),
   headOffset: Vector2(-0.46, -0.84),
   chassisDensity: 1.5,
@@ -296,5 +336,435 @@ final Vehicle crawler = Vehicle(
   dragCoefficient: 1.7,
 );
 
-/// Every vehicle, in garage order.
-final List<Vehicle> vehicles = [rover, scout, hauler, jumper, crawler];
+
+
+/// -------------------------------------------------------------------
+/// TWO-WHEELERS
+///
+/// Light, quick and tippy: a tall helmet mass on a short wheelbase is
+/// what makes a bike interesting to ride and easy to loop.
+/// -------------------------------------------------------------------
+
+final Vehicle dustdevil = Vehicle(
+  id: 'dustdevil',
+  name: 'Dust Devil',
+  tagline: 'Flickable trials bike. Points anywhere, holds nothing.',
+  bodyAsset: 'dustdevil_body.png',
+  wheelAsset: 'dustdevil_wheel.png',
+  spriteSize: Vector2(3.2, 2.13),
+  chassisSize: Vector2(2.2, 0.55),
+  wheels: [
+    WheelMount(anchor: Vector2(-1.41, 0.55), radius: 0.44, spriteScale: 1.09),
+    WheelMount(anchor: Vector2(0.96, 0.55), radius: 0.44, spriteScale: 1.09),
+  ],
+  driverScale: 0.72,
+  driverOffset: Vector2(0.02, -0.52),
+  headOffset: Vector2(-0.1, -0.92),
+  headRadius: 0.24,
+  chassisDensity: 0.5,
+  wheelDensity: 0.9,
+  headDensity: 0.75,
+  wheelFriction: 2.0,
+  suspensionFrequencyHz: 5.8,
+  suspensionDampingRatio: 0.6,
+  engineMaxTorque: 45,
+  engineMaxMotorSpeed: 26,
+  chassisPitchTorque: 20,
+  powerCurveExponent: 2.0,
+  dragCoefficient: 0.62,
+);
+
+final Vehicle piston = Vehicle(
+  id: 'piston',
+  name: 'Piston',
+  tagline: 'Absurd shove off the line, and a swingarm you can land on.',
+  bodyAsset: 'piston_body.png',
+  wheelAsset: 'piston_wheel.png',
+  spriteSize: Vector2(3.2, 2.13),
+  chassisSize: Vector2(2.2, 0.55),
+  wheels: [
+    WheelMount(anchor: Vector2(-1.5, 0.47), radius: 0.44, spriteScale: 1.09),
+    WheelMount(anchor: Vector2(1.28, 0.47), radius: 0.44, spriteScale: 1.09),
+  ],
+  driverScale: 0.72,
+  driverOffset: Vector2(0.02, -0.52),
+  headOffset: Vector2(-0.1, -0.92),
+  headRadius: 0.24,
+  chassisDensity: 0.7,
+  wheelDensity: 0.9,
+  headDensity: 0.8,
+  wheelFriction: 1.7,
+  suspensionFrequencyHz: 6.5,
+  suspensionDampingRatio: 0.5,
+  engineMaxTorque: 96,
+  engineMaxMotorSpeed: 30,
+  chassisPitchTorque: 43,
+  powerCurveExponent: 1.5,
+  dragCoefficient: 0.6,
+);
+
+final Vehicle gecko = Vehicle(
+  id: 'gecko',
+  name: 'Gecko',
+  tagline: 'Short, grippy and stubborn. Walks up things it should not.',
+  bodyAsset: 'gecko_body.png',
+  wheelAsset: 'gecko_wheel.png',
+  spriteSize: Vector2(3.2, 2.13),
+  chassisSize: Vector2(2.2, 0.55),
+  wheels: [
+    WheelMount(anchor: Vector2(-1.38, 0.51), radius: 0.44, spriteScale: 1.09),
+    WheelMount(anchor: Vector2(1.06, 0.51), radius: 0.44, spriteScale: 1.09),
+  ],
+  driverScale: 0.72,
+  driverOffset: Vector2(0.02, -0.52),
+  headOffset: Vector2(-0.1, -0.92),
+  headRadius: 0.24,
+  chassisDensity: 0.55,
+  wheelDensity: 0.9,
+  headDensity: 0.7,
+  wheelFriction: 2.8,
+  suspensionFrequencyHz: 5.2,
+  suspensionDampingRatio: 0.7,
+  engineMaxTorque: 62,
+  engineMaxMotorSpeed: 20,
+  chassisPitchTorque: 28,
+  powerCurveExponent: 2.4,
+  dragCoefficient: 0.7,
+);
+
+final Vehicle ionwing = Vehicle(
+  id: 'ionwing',
+  name: 'Ionwing',
+  tagline: 'Barely there. Thruster-light, and slides on a bad look.',
+  bodyAsset: 'ionwing_body.png',
+  wheelAsset: 'ionwing_wheel.png',
+  spriteSize: Vector2(3.2, 2.13),
+  chassisSize: Vector2(2.2, 0.55),
+  wheels: [
+    WheelMount(anchor: Vector2(-1.31, 0.51), radius: 0.44, spriteScale: 1.09),
+    WheelMount(anchor: Vector2(1.09, 0.51), radius: 0.44, spriteScale: 1.09),
+  ],
+  driverScale: 0.72,
+  driverOffset: Vector2(0.02, -0.52),
+  headOffset: Vector2(-0.1, -0.92),
+  headRadius: 0.24,
+  chassisDensity: 0.42,
+  wheelDensity: 0.9,
+  headDensity: 0.65,
+  wheelFriction: 1.6,
+  suspensionFrequencyHz: 4.2,
+  suspensionDampingRatio: 0.45,
+  engineMaxTorque: 40,
+  engineMaxMotorSpeed: 32,
+  chassisPitchTorque: 18,
+  powerCurveExponent: 1.6,
+  dragCoefficient: 0.48,
+);
+
+final Vehicle scarab = Vehicle(
+  id: 'scarab',
+  name: 'Scarab',
+  tagline: 'Fat tyres for soft ground. Unhurried and sure-footed.',
+  bodyAsset: 'scarab_body.png',
+  wheelAsset: 'scarab_wheel.png',
+  spriteSize: Vector2(3.2, 2.13),
+  chassisSize: Vector2(2.2, 0.55),
+  wheels: [
+    WheelMount(anchor: Vector2(-1.44, 0.51), radius: 0.44, spriteScale: 1.09),
+    WheelMount(anchor: Vector2(1.02, 0.51), radius: 0.44, spriteScale: 1.09),
+  ],
+  driverScale: 0.72,
+  driverOffset: Vector2(0.02, -0.52),
+  headOffset: Vector2(-0.1, -0.92),
+  headRadius: 0.24,
+  chassisDensity: 0.62,
+  wheelDensity: 0.9,
+  headDensity: 0.7,
+  wheelFriction: 2.5,
+  suspensionFrequencyHz: 4.6,
+  suspensionDampingRatio: 0.62,
+  engineMaxTorque: 58,
+  engineMaxMotorSpeed: 22,
+  chassisPitchTorque: 26,
+  powerCurveExponent: 2.2,
+  dragCoefficient: 0.72,
+);
+
+final Vehicle needle = Vehicle(
+  id: 'needle',
+  name: 'Needle',
+  tagline: 'Built for one number. Everything else was negotiable.',
+  bodyAsset: 'needle_body.png',
+  wheelAsset: 'needle_wheel.png',
+  spriteSize: Vector2(3.2, 2.13),
+  chassisSize: Vector2(2.2, 0.55),
+  wheels: [
+    WheelMount(anchor: Vector2(-1.47, 0.6), radius: 0.44, spriteScale: 1.09),
+    WheelMount(anchor: Vector2(1.18, 0.6), radius: 0.44, spriteScale: 1.09),
+  ],
+  driverScale: 0.72,
+  driverOffset: Vector2(0.02, -0.52),
+  headOffset: Vector2(-0.1, -0.92),
+  headRadius: 0.24,
+  chassisDensity: 0.6,
+  wheelDensity: 0.9,
+  headDensity: 0.85,
+  wheelFriction: 1.5,
+  suspensionFrequencyHz: 7.5,
+  suspensionDampingRatio: 0.55,
+  engineMaxTorque: 44,
+  engineMaxMotorSpeed: 38,
+  chassisPitchTorque: 20,
+  powerCurveExponent: 1.2,
+  dragCoefficient: 0.4,
+);
+
+final Vehicle ratchet = Vehicle(
+  id: 'ratchet',
+  name: 'Ratchet',
+  tagline: 'Someone welded this out of three other bikes. It runs.',
+  bodyAsset: 'ratchet_body.png',
+  wheelAsset: 'ratchet_wheel.png',
+  spriteSize: Vector2(3.2, 2.13),
+  chassisSize: Vector2(2.2, 0.55),
+  wheels: [
+    WheelMount(anchor: Vector2(-1.44, 0.51), radius: 0.44, spriteScale: 1.09),
+    WheelMount(anchor: Vector2(1.06, 0.51), radius: 0.44, spriteScale: 1.09),
+  ],
+  driverScale: 0.72,
+  driverOffset: Vector2(0.02, -0.52),
+  headOffset: Vector2(-0.1, -0.92),
+  headRadius: 0.24,
+  chassisDensity: 0.58,
+  wheelDensity: 0.9,
+  headDensity: 0.8,
+  wheelFriction: 1.9,
+  suspensionFrequencyHz: 5.0,
+  suspensionDampingRatio: 0.55,
+  engineMaxTorque: 50,
+  engineMaxMotorSpeed: 21,
+  chassisPitchTorque: 22,
+  powerCurveExponent: 2.1,
+  dragCoefficient: 0.68,
+);
+
+
+/// -------------------------------------------------------------------
+/// TRIKES
+///
+/// In side view a reverse trike's two front wheels sit at the same x, so
+/// these are two-axle machines here. The third wheel is width, not
+/// length - it shows up as grip and stability, not as another mount.
+/// -------------------------------------------------------------------
+
+final Vehicle trilobite = Vehicle(
+  id: 'trilobite',
+  name: 'Trilobite',
+  tagline: 'Two wheels up front and a low armoured nose. Planted.',
+  bodyAsset: 'trilobite_body.png',
+  wheelAsset: 'trilobite_wheel.png',
+  spriteSize: Vector2(4.4, 2.93),
+  chassisSize: Vector2(3.2, 0.8),
+  wheels: [
+    WheelMount(anchor: Vector2(-1.89, 0.82), radius: 0.49, spriteScale: 1.09),
+    WheelMount(anchor: Vector2(1.67, 0.82), radius: 0.49, spriteScale: 1.09),
+  ],
+  driverScale: 0.88,
+  driverOffset: Vector2(0.0, -0.46),
+  headOffset: Vector2(-0.14, -0.9),
+  headRadius: 0.29,
+  chassisDensity: 1.1,
+  wheelDensity: 0.9,
+  headDensity: 0.4,
+  wheelFriction: 2.6,
+  suspensionFrequencyHz: 5.4,
+  suspensionDampingRatio: 0.7,
+  engineMaxTorque: 78,
+  engineMaxMotorSpeed: 20,
+  chassisPitchTorque: 35,
+  powerCurveExponent: 2.2,
+  dragCoefficient: 1.1,
+);
+
+final Vehicle wasp = Vehicle(
+  id: 'wasp',
+  name: 'Wasp',
+  tagline: 'Sharp and light. Rewards a clean line, punishes a lazy one.',
+  bodyAsset: 'wasp_body.png',
+  wheelAsset: 'wasp_wheel.png',
+  spriteSize: Vector2(4.4, 2.93),
+  chassisSize: Vector2(3.2, 0.8),
+  wheels: [
+    WheelMount(anchor: Vector2(-1.8, 0.7), radius: 0.49, spriteScale: 1.09),
+    WheelMount(anchor: Vector2(1.76, 0.7), radius: 0.49, spriteScale: 1.09),
+  ],
+  driverScale: 0.88,
+  driverOffset: Vector2(0.0, -0.46),
+  headOffset: Vector2(-0.14, -0.9),
+  headRadius: 0.29,
+  chassisDensity: 0.8,
+  wheelDensity: 0.9,
+  headDensity: 0.6,
+  wheelFriction: 1.9,
+  suspensionFrequencyHz: 6.0,
+  suspensionDampingRatio: 0.55,
+  engineMaxTorque: 58,
+  engineMaxMotorSpeed: 30,
+  chassisPitchTorque: 26,
+  powerCurveExponent: 1.6,
+  dragCoefficient: 0.75,
+);
+
+final Vehicle kite = Vehicle(
+  id: 'kite',
+  name: 'Kite',
+  tagline: 'Solar-fed and slow, but it never seems to run out.',
+  bodyAsset: 'kite_body.png',
+  wheelAsset: 'kite_wheel.png',
+  spriteSize: Vector2(4.4, 2.93),
+  chassisSize: Vector2(3.2, 0.8),
+  wheels: [
+    WheelMount(anchor: Vector2(-1.85, 0.7), radius: 0.49, spriteScale: 1.09),
+    WheelMount(anchor: Vector2(1.76, 0.7), radius: 0.49, spriteScale: 1.09),
+  ],
+  driverScale: 0.88,
+  driverOffset: Vector2(0.0, -0.46),
+  headOffset: Vector2(-0.14, -0.9),
+  headRadius: 0.29,
+  chassisDensity: 0.9,
+  wheelDensity: 0.9,
+  headDensity: 0.5,
+  wheelFriction: 2.4,
+  suspensionFrequencyHz: 5.0,
+  suspensionDampingRatio: 0.66,
+  engineMaxTorque: 52,
+  engineMaxMotorSpeed: 16,
+  chassisPitchTorque: 23,
+  powerCurveExponent: 2.6,
+  dragCoefficient: 1.6,
+);
+
+final Vehicle haulertrike = Vehicle(
+  id: 'haulertrike',
+  name: 'Hauler Trike',
+  tagline: 'Loaded to the roll bar. Slow, heavy, and it does not care.',
+  bodyAsset: 'haulertrike_body.png',
+  wheelAsset: 'haulertrike_wheel.png',
+  spriteSize: Vector2(4.4, 2.93),
+  chassisSize: Vector2(3.2, 0.8),
+  wheels: [
+    WheelMount(anchor: Vector2(-1.85, 0.76), radius: 0.49, spriteScale: 1.09),
+    WheelMount(anchor: Vector2(1.67, 0.76), radius: 0.49, spriteScale: 1.09),
+  ],
+  driverScale: 0.88,
+  driverOffset: Vector2(0.0, -0.46),
+  headOffset: Vector2(-0.14, -0.9),
+  headRadius: 0.29,
+  chassisDensity: 1.7,
+  wheelDensity: 0.9,
+  headDensity: 0.35,
+  wheelFriction: 2.9,
+  suspensionFrequencyHz: 4.4,
+  suspensionDampingRatio: 0.78,
+  engineMaxTorque: 104,
+  engineMaxMotorSpeed: 14,
+  chassisPitchTorque: 47,
+  powerCurveExponent: 3.0,
+  dragCoefficient: 2.0,
+);
+
+final Vehicle compass = Vehicle(
+  id: 'compass',
+  name: 'Compass',
+  tagline: 'Instruments everywhere. Steady, deliberate, well behaved.',
+  bodyAsset: 'compass_body.png',
+  wheelAsset: 'compass_wheel.png',
+  spriteSize: Vector2(4.4, 2.93),
+  chassisSize: Vector2(3.2, 0.8),
+  wheels: [
+    WheelMount(anchor: Vector2(-1.89, 0.82), radius: 0.49, spriteScale: 1.09),
+    WheelMount(anchor: Vector2(1.72, 0.82), radius: 0.49, spriteScale: 1.09),
+  ],
+  driverScale: 0.88,
+  driverOffset: Vector2(0.0, -0.46),
+  headOffset: Vector2(-0.14, -0.9),
+  headRadius: 0.29,
+  chassisDensity: 1.0,
+  wheelDensity: 0.9,
+  headDensity: 0.45,
+  wheelFriction: 2.5,
+  suspensionFrequencyHz: 5.2,
+  suspensionDampingRatio: 0.72,
+  engineMaxTorque: 68,
+  engineMaxMotorSpeed: 19,
+  chassisPitchTorque: 31,
+  powerCurveExponent: 2.4,
+  dragCoefficient: 1.2,
+);
+
+final Vehicle cinder = Vehicle(
+  id: 'cinder',
+  name: 'Cinder',
+  tagline: 'A hot rod that wants the throttle open and the nose up.',
+  bodyAsset: 'cinder_body.png',
+  wheelAsset: 'cinder_wheel.png',
+  spriteSize: Vector2(4.4, 2.93),
+  chassisSize: Vector2(3.2, 0.8),
+  wheels: [
+    WheelMount(anchor: Vector2(-1.85, 0.76), radius: 0.49, spriteScale: 1.09),
+    WheelMount(anchor: Vector2(1.72, 0.76), radius: 0.49, spriteScale: 1.09),
+  ],
+  driverScale: 0.88,
+  driverOffset: Vector2(0.0, -0.46),
+  headOffset: Vector2(-0.14, -0.9),
+  headRadius: 0.29,
+  chassisDensity: 0.95,
+  wheelDensity: 0.9,
+  headDensity: 0.6,
+  wheelFriction: 2.0,
+  suspensionFrequencyHz: 5.6,
+  suspensionDampingRatio: 0.52,
+  engineMaxTorque: 92,
+  engineMaxMotorSpeed: 26,
+  chassisPitchTorque: 41,
+  powerCurveExponent: 1.5,
+  dragCoefficient: 0.9,
+);
+
+final Vehicle stilt = Vehicle(
+  id: 'stilt',
+  name: 'Stilt',
+  tagline: 'All ground clearance and no sense. Tall enough to worry.',
+  bodyAsset: 'stilt_body.png',
+  wheelAsset: 'stilt_wheel.png',
+  spriteSize: Vector2(4.4, 2.93),
+  chassisSize: Vector2(3.2, 0.8),
+  wheels: [
+    WheelMount(anchor: Vector2(-1.89, 0.88), radius: 0.49, spriteScale: 1.09),
+    WheelMount(anchor: Vector2(1.76, 0.88), radius: 0.49, spriteScale: 1.09),
+  ],
+  driverScale: 0.88,
+  driverOffset: Vector2(0.0, -0.46),
+  headOffset: Vector2(-0.14, -0.9),
+  headRadius: 0.29,
+  chassisDensity: 0.85,
+  wheelDensity: 0.9,
+  headDensity: 0.9,
+  wheelFriction: 2.3,
+  suspensionFrequencyHz: 4.8,
+  suspensionDampingRatio: 0.6,
+  engineMaxTorque: 70,
+  engineMaxMotorSpeed: 22,
+  chassisPitchTorque: 32,
+  powerCurveExponent: 2.2,
+  dragCoefficient: 0.95,
+);
+
+
+/// Every vehicle, in garage order: the original rovers, then the bikes,
+/// then the trikes.
+final List<Vehicle> vehicles = [
+  rover, scout, hauler, jumper, crawler,
+  dustdevil, piston, gecko, ionwing, scarab, needle, ratchet,
+  trilobite, wasp, kite, haulertrike, compass, cinder, stilt,
+];

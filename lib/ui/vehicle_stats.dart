@@ -25,9 +25,9 @@ class VehicleBars {
       hi <= lo ? 0.5 : ((v - lo) / (hi - lo)).clamp(0.0, 1.0);
 
   static double _stabilityScore(Vehicle v) {
-    final wheelbase = (v.frontAnchor.x - v.rearAnchor.x).abs();
-    // Long wheelbase good, heavy helmet bad.
-    return wheelbase - v.headDensity * 3.0;
+    // Long wheelbase good, heavy helmet bad - and more wheels on the
+    // ground is steadier still.
+    return v.wheelbase + (v.wheelCount - 2) * 0.35 - v.headDensity * 3.0;
   }
 
   static VehicleBars of(Vehicle v) {

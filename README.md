@@ -96,7 +96,7 @@ lib/
 │   │   ├── terrain_chunk.dart         One chain-shape body + its ground fill
 │   │   └── terrain_manager.dart       Streams chunks in/out, culls, spawns cells
 │   ├── vehicle/
-│   │   ├── vehicle.dart               ★ Vehicle definitions (the garage)
+│   │   ├── vehicle.dart               ★ Vehicle + WheelMount definitions
 │   │   ├── rover.dart                 Chassis body, wheel joints, drive logic
 │   │   ├── wheel.dart                 Circle body + spinning tyre sprite
 │   │   └── driver_head.dart           Welded head body — the flip detector
@@ -118,22 +118,26 @@ lib/
 
 ## The garage
 
-| Machine | Character |
-|---|---|
-| **Pathfinder** | The yardstick — no weakness, no speciality |
-| **Skimmer** | Feather-light and fast, slips on anything steep |
-| **Ox** | Slow and immensely heavy, climbs absolutely anything |
-| **Leaper** | Enormous suspension travel, lands from height, twitchy |
-| **Anchor** | Long and low, nearly unflippable, clumsy over ripples |
+**19 machines**: five buggies, seven bikes and seven trikes.
 
 A vehicle is one `Vehicle` in `game/vehicle/vehicle.dart` plus two PNGs — a
 chassis and a wheel. Every dimension and handling number comes from that
-object, so `rover.dart` is the same code for all five. Wheel anchors were
-measured off each piece of art by compositing the wheels onto the chassis.
+object, so `rover.dart` is the same code for all of them.
 
-`vehicles_test` checks the assets exist, the wheels sit inside their arches
-the right way round, and that no single machine leads every stat — if one did,
-there would be no reason to drive the others.
+Wheels are a `List<WheelMount>` rather than a front/rear pair, so a bike, a
+trike and a six-wheeler are all the same code path. Engine torque is split
+across the driven wheels — otherwise a six-wheeler would have three times the
+shove of a bike from the same engine.
+
+**A trike is a two-axle machine here.** In side view a reverse trike's two
+front wheels sit at the same x, so the third wheel is width, not length: it
+shows up as grip and stability, not as another mount. Wheel counts above two
+only mean extra *axles* — a 6x6 truck, not a trike.
+
+`vehicles_test` checks the assets exist, every wheel sits inside its own body
+art and below the chassis centre, no two wheels overlap, something drives the
+machine, and no single machine leads every stat — if one did, there would be
+no reason to drive the others.
 
 ## The courses
 

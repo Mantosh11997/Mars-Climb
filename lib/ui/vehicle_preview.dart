@@ -23,10 +23,6 @@ class VehiclePreview extends StatelessWidget {
           0.5 + (anchor.y - vehicle.spriteOffset.y) / vehicle.spriteSize.y,
         );
 
-    final rear = frac(vehicle.rearAnchor);
-    final front = frac(vehicle.frontAnchor);
-    final wheelFrac =
-        vehicle.wheelRadius * 2 * vehicle.wheelSpriteScale / vehicle.spriteSize.x;
 
     return LayoutBuilder(
       builder: (context, c) {
@@ -40,19 +36,22 @@ class VehiclePreview extends StatelessWidget {
           w = h * aspect;
         }
 
-        final wheelPx = wheelFrac * w;
-
-        Widget wheelAt(Offset f) => Positioned(
-              left: f.dx * w - wheelPx / 2,
-              top: f.dy * h - wheelPx / 2,
-              width: wheelPx,
-              height: wheelPx,
-              child: Image.asset(
-                'assets/images/${vehicle.wheelAsset}',
-                fit: BoxFit.contain,
-                filterQuality: FilterQuality.medium,
-              ),
-            );
+        Widget wheelAt(WheelMount mount) {
+          final f = frac(mount.anchor);
+          final px =
+              mount.radius * 2 * mount.spriteScale / vehicle.spriteSize.x * w;
+          return Positioned(
+            left: f.dx * w - px / 2,
+            top: f.dy * h - px / 2,
+            width: px,
+            height: px,
+            child: Image.asset(
+              'assets/images/${vehicle.wheelAsset}',
+              fit: BoxFit.contain,
+              filterQuality: FilterQuality.medium,
+            ),
+          );
+        }
 
         return Center(
           child: SizedBox(
@@ -62,9 +61,9 @@ class VehiclePreview extends StatelessWidget {
               clipBehavior: Clip.none,
               children: [
                 // Wheels behind the body, so the arches overlap the tyre
-                // exactly as they do in game.
-                wheelAt(rear),
-                wheelAt(front),
+                // exactly as they do in game. Every wheel the machine
+                // carries, whether that is two or six.
+                for (final mount in vehicle.wheels) wheelAt(mount),
                 Positioned.fill(
                   child: Image.asset(
                     'assets/images/${vehicle.bodyAsset}',

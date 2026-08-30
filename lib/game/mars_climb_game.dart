@@ -111,8 +111,8 @@ class MarsClimbGame extends Forge2DGame {
     generator = TerrainGenerator(level);
 
     const spawnX = Level.startX;
-    final spawnY = generator.surfaceY(spawnX) -
-        (vehicle.wheelRadius + vehicle.chassisSize.y / 2 + 0.6);
+    final spawnY =
+        generator.surfaceY(spawnX) - (vehicle.lowestWheelExtent + 0.6);
     final spawn = Vector2(spawnX, spawnY);
 
     terrain = TerrainManager(

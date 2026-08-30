@@ -21,20 +21,39 @@ void main() {
     }
   });
 
-  test('wheel anchors sit inside the chassis art and the right way round', () {
+  test('every wheel sits inside the chassis art and below its centre', () {
     for (final v in vehicles) {
-      expect(v.frontAnchor.x, greaterThan(v.rearAnchor.x),
-          reason: '${v.id}: the front wheel must be ahead of the rear one');
+      expect(v.wheels.length, greaterThanOrEqualTo(2),
+          reason: '${v.id}: a machine needs at least two wheels to stand up');
 
       final halfWidth = v.spriteSize.x / 2;
-      expect(v.rearAnchor.x.abs(), lessThan(halfWidth),
-          reason: '${v.id}: rear wheel is outside the body art');
-      expect(v.frontAnchor.x.abs(), lessThan(halfWidth),
-          reason: '${v.id}: front wheel is outside the body art');
+      for (var i = 0; i < v.wheels.length; i++) {
+        final w = v.wheels[i];
+        expect(w.anchor.x.abs(), lessThan(halfWidth),
+            reason: '${v.id} wheel $i is outside the body art');
+        expect(w.anchor.y, greaterThan(0),
+            reason: '${v.id} wheel $i should hang below the chassis centre');
+        expect(w.radius, greaterThan(0.1), reason: '${v.id} wheel $i radius');
+      }
 
-      // Wheels hang below the chassis centre, never above it.
-      expect(v.rearAnchor.y, greaterThan(0), reason: '${v.id} rear wheel');
-      expect(v.frontAnchor.y, greaterThan(0), reason: '${v.id} front wheel');
+      expect(v.wheelbase, greaterThan(0.5),
+          reason: '${v.id}: wheels are all bunched at one point');
+      expect(v.wheels.any((w) => w.driven), isTrue,
+          reason: '${v.id}: nothing drives this machine');
+    }
+  });
+
+  test('no two wheels overlap each other', () {
+    for (final v in vehicles) {
+      for (var i = 0; i < v.wheels.length; i++) {
+        for (var j = i + 1; j < v.wheels.length; j++) {
+          final a = v.wheels[i];
+          final b = v.wheels[j];
+          final gap = (a.anchor - b.anchor).length;
+          expect(gap, greaterThan((a.radius + b.radius) * 0.75),
+              reason: '${v.id}: wheels $i and $j are on top of each other');
+        }
+      }
     }
   });
 

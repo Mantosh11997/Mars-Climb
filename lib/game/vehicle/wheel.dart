@@ -9,7 +9,7 @@ class Wheel extends BodyComponent {
   Wheel({
     required this.spawn,
     required this.sprite,
-    required this.isFront,
+    required this.mount,
     required this.vehicle,
   }) {
     renderBody = false;
@@ -18,14 +18,17 @@ class Wheel extends BodyComponent {
 
   final Vector2 spawn;
   final Sprite sprite;
-  final bool isFront;
+
+  /// Where this wheel sits on the machine, and how big it is.
+  final WheelMount mount;
+
   final Vehicle vehicle;
 
   @override
   Future<void> onLoad() async {
     await super.onLoad();
 
-    final diameter = vehicle.wheelRadius * 2 * vehicle.wheelSpriteScale;
+    final diameter = mount.radius * 2 * mount.spriteScale;
 
     // The sprite is a child of the body, so it inherits the wheel's
     // rotation for free - the tyre visibly spins.
@@ -41,7 +44,7 @@ class Wheel extends BodyComponent {
 
   @override
   Body createBody() {
-    final shape = CircleShape()..radius = vehicle.wheelRadius;
+    final shape = CircleShape()..radius = mount.radius;
 
     final fixtureDef = FixtureDef(shape)
       ..density = vehicle.wheelDensity
