@@ -12,6 +12,7 @@ import 'state/game_state.dart';
 import 'terrain/terrain_generator.dart';
 import 'terrain/terrain_manager.dart';
 import 'vehicle/rover.dart';
+import 'vehicle/vehicle.dart' as v;
 import 'world/mars_backdrop.dart';
 
 /// Overlay ids, kept in one place so the game and the widget layer can't
@@ -25,10 +26,12 @@ class Overlays {
 }
 
 class MarsClimbGame extends Forge2DGame {
-  MarsClimbGame({this.level = level1})
-      : super(gravity: Vector2(0, GameConfig.gravity));
+  MarsClimbGame({this.level = level1, v.Vehicle? vehicle})
+      : vehicle = vehicle ?? v.rover,
+        super(gravity: Vector2(0, GameConfig.gravity));
 
   Level level;
+  v.Vehicle vehicle;
 
   late final GameState state = GameState(level);
 
@@ -51,8 +54,8 @@ class MarsClimbGame extends Forge2DGame {
   Future<void> onLoad() async {
     await super.onLoad();
 
-    _chassisSprite = await loadSprite('car_body.png');
-    _wheelSprite = await loadSprite('wheel.png');
+    _chassisSprite = await loadSprite(vehicle.bodyAsset);
+    _wheelSprite = await loadSprite(vehicle.wheelAsset);
     _driverSprite = await loadSprite('character.png');
 
     camera.viewfinder.anchor = Anchor.center;
@@ -67,6 +70,8 @@ class MarsClimbGame extends Forge2DGame {
         cameraPosition: () => camera.viewfinder.position,
         viewportSize: () => camera.viewport.size,
         cameraZoom: () => camera.viewfinder.zoom,
+        theme: level.theme,
+        seed: level.seed,
       ),
     );
 
@@ -105,7 +110,7 @@ class MarsClimbGame extends Forge2DGame {
 
     const spawnX = Level.startX;
     final spawnY = generator.surfaceY(spawnX) -
-        (GameConfig.wheelRadius + GameConfig.chassisSize.y / 2 + 0.6);
+        (vehicle.wheelRadius + vehicle.chassisSize.y / 2 + 0.6);
     final spawn = Vector2(spawnX, spawnY);
 
     terrain = TerrainManager(
@@ -122,6 +127,7 @@ class MarsClimbGame extends Forge2DGame {
 
     rover = Rover(
       spawn: spawn,
+      vehicle: vehicle,
       chassisSprite: _chassisSprite,
       wheelSprite: _wheelSprite,
       driverSprite: _driverSprite,

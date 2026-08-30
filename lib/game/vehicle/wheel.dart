@@ -2,6 +2,7 @@ import 'package:flame/components.dart';
 import 'package:flame_forge2d/flame_forge2d.dart';
 
 import '../config.dart';
+import 'vehicle.dart';
 
 /// One rover wheel: a circle body with the tyre sprite riding on it.
 class Wheel extends BodyComponent {
@@ -9,6 +10,7 @@ class Wheel extends BodyComponent {
     required this.spawn,
     required this.sprite,
     required this.isFront,
+    required this.vehicle,
   }) {
     renderBody = false;
     priority = 5;
@@ -17,12 +19,13 @@ class Wheel extends BodyComponent {
   final Vector2 spawn;
   final Sprite sprite;
   final bool isFront;
+  final Vehicle vehicle;
 
   @override
   Future<void> onLoad() async {
     await super.onLoad();
 
-    const diameter = GameConfig.wheelRadius * 2 * GameConfig.wheelSpriteScale;
+    final diameter = vehicle.wheelRadius * 2 * vehicle.wheelSpriteScale;
 
     // The sprite is a child of the body, so it inherits the wheel's
     // rotation for free - the tyre visibly spins.
@@ -38,11 +41,11 @@ class Wheel extends BodyComponent {
 
   @override
   Body createBody() {
-    final shape = CircleShape()..radius = GameConfig.wheelRadius;
+    final shape = CircleShape()..radius = vehicle.wheelRadius;
 
     final fixtureDef = FixtureDef(shape)
-      ..density = GameConfig.wheelDensity
-      ..friction = GameConfig.wheelFriction
+      ..density = vehicle.wheelDensity
+      ..friction = vehicle.wheelFriction
       ..restitution = GameConfig.wheelRestitution
       ..filter.categoryBits = GameConfig.categoryVehicle
       ..filter.maskBits = GameConfig.categoryTerrain | GameConfig.categoryPickup;
@@ -50,7 +53,7 @@ class Wheel extends BodyComponent {
     final bodyDef = BodyDef(
       type: BodyType.dynamic,
       position: spawn,
-      angularDamping: GameConfig.wheelAngularDamping,
+      angularDamping: vehicle.wheelAngularDamping,
       userData: this,
     );
 

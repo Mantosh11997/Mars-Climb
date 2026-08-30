@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart' show VoidCallback;
 import 'package:flame_forge2d/flame_forge2d.dart';
 
 import '../config.dart';
+import 'vehicle.dart';
 
 /// The driver's helmet, as a real (welded) physics body.
 ///
@@ -9,19 +10,24 @@ import '../config.dart';
 /// ground?". The visible character art lives on the chassis; this body is
 /// invisible.
 class DriverHead extends BodyComponent with ContactCallbacks {
-  DriverHead({required this.spawn, required this.onGroundImpact}) {
+  DriverHead({
+    required this.spawn,
+    required this.onGroundImpact,
+    required this.vehicle,
+  }) {
     renderBody = false;
   }
 
   final Vector2 spawn;
   final VoidCallback onGroundImpact;
+  final Vehicle vehicle;
 
   @override
   Body createBody() {
-    final shape = CircleShape()..radius = GameConfig.headRadius;
+    final shape = CircleShape()..radius = vehicle.headRadius;
 
     final fixtureDef = FixtureDef(shape)
-      ..density = GameConfig.headDensity
+      ..density = vehicle.headDensity
       ..friction = 0.3
       ..restitution = 0.1
       ..filter.categoryBits = GameConfig.categoryDriver

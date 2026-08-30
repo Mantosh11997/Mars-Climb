@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flame_forge2d/flame_forge2d.dart';
 
 import '../config.dart';
+import '../level/theme.dart';
 import 'terrain_generator.dart';
 
 /// One slice of Martian ground: a Forge2D chain shape plus the reddish
@@ -23,6 +24,8 @@ class TerrainChunk extends BodyComponent {
 
   final int index;
   final TerrainGenerator _generator;
+
+  LevelTheme get _theme => _generator.level.theme;
   final double startX;
   final double endX;
 
@@ -120,7 +123,7 @@ class TerrainChunk extends BodyComponent {
       ..shader = Gradient.linear(
         Offset(startX, top),
         Offset(startX, bottom),
-        const [GameConfig.groundFill, GameConfig.groundFillDeep],
+        [_theme.groundFill, _theme.groundFillDeep],
       );
 
     canvas.drawPath(_fillPath!, bodyPaint);
@@ -131,7 +134,7 @@ class TerrainChunk extends BodyComponent {
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = 0.22
-        ..color = GameConfig.groundCrust
+        ..color = _theme.groundCrust
         ..strokeJoin = StrokeJoin.round
         ..strokeCap = StrokeCap.round,
     );

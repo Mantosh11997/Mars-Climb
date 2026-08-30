@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flame/components.dart';
 
 import '../config.dart';
+import '../level/theme.dart';
 import '../terrain/noise.dart';
 
 /// A single parallax band of Martian terrain silhouette.
@@ -47,7 +48,15 @@ class MarsBackdrop extends Component {
     required this.cameraPosition,
     required this.viewportSize,
     required this.cameraZoom,
+    required this.theme,
+    required this.seed,
   });
+
+  /// Palette for this course.
+  final LevelTheme theme;
+
+  /// Seeds the scenery silhouettes, so each course has its own skyline.
+  final int seed;
 
   /// Live reference to `camera.viewfinder.position` (metres).
   final Vector2 Function() cameraPosition;
@@ -65,35 +74,35 @@ class MarsBackdrop extends Component {
     _ParallaxBand(
       factor: 0.08,
       verticalFactor: 0.16,
-      color: GameConfig.mountainFar,
+      color: theme.mountainFar,
       amplitude: 120,
       wavelength: 620,
-      seed: GameConfig.terrainSeed + 11,
+      seed: seed + 11,
     ),
     // Mid ridge.
     _ParallaxBand(
       factor: 0.20,
       verticalFactor: 0.24,
-      color: GameConfig.mountainMid,
+      color: theme.mountainMid,
       amplitude: 95,
       wavelength: 430,
-      seed: GameConfig.terrainSeed + 29,
+      seed: seed + 29,
     ),
     // Near dunes - noticeably faster, sits lowest.
     _ParallaxBand(
       factor: 0.42,
       verticalFactor: 0.32,
-      color: GameConfig.mountainNear,
+      color: theme.mountainNear,
       amplitude: 74,
       wavelength: 310,
-      seed: GameConfig.terrainSeed + 53,
+      seed: seed + 53,
     ),
   ];
 
   late final List<Offset> _stars = _generateStars();
 
   List<Offset> _generateStars() {
-    final rng = SeededRandom(GameConfig.terrainSeed + 7);
+    final rng = SeededRandom(seed + 7);
     // Normalised (0..1) positions, scaled to the viewport at render time.
     return List.generate(
       70,
@@ -135,11 +144,11 @@ class MarsBackdrop extends Component {
         ..shader = Gradient.linear(
           const Offset(0, 0),
           Offset(0, h),
-          const [
-            GameConfig.skyTop,
-            GameConfig.skyMid,
-            GameConfig.skyLow,
-            GameConfig.skyHorizon,
+          [
+            theme.skyTop,
+            theme.skyMid,
+            theme.skyLow,
+            theme.skyHorizon,
           ],
           const [0.0, 0.42, 0.72, 1.0],
         ),
@@ -153,6 +162,8 @@ class MarsBackdrop extends Component {
     Vector2 cam,
     double zoom,
   ) {
+    if (theme.starOpacity <= 0) return;
+
     // Stars drift the least of anything - almost, but not quite, fixed.
     final drift = -cam.x * zoom * 0.02;
     final lift = (GameConfig.terrainBaseY - cam.y) * zoom * 0.05;
@@ -166,7 +177,7 @@ class MarsBackdrop extends Component {
       if (y < 0 || y > h) continue;
       // Fade stars out toward the bright horizon.
       paint.color = const Color(0xFFFFE9D6).withOpacity(
-        0.6 * (1.0 - (y / (h * 0.55))).clamp(0.0, 1.0),
+        theme.starOpacity * (1.0 - (y / (h * 0.55))).clamp(0.0, 1.0),
       );
       canvas.drawCircle(Offset(x, y), i.isEven ? 1.1 : 1.7, paint);
     }
@@ -182,10 +193,10 @@ class MarsBackdrop extends Component {
         Offset(cx, cy),
         70,
         Paint()
-          ..color = GameConfig.sun.withOpacity(0.16)
+          ..color = theme.sun.withOpacity(0.16)
           ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 40),
       )
-      ..drawCircle(Offset(cx, cy), 22, Paint()..color = GameConfig.sun);
+      ..drawCircle(Offset(cx, cy), 22, Paint()..color = theme.sun);
   }
 
   void _renderBand(
@@ -257,9 +268,9 @@ class MarsBackdrop extends Component {
           Offset(0, top),
           Offset(0, bottom),
           [
-            const Color(0x00E9A063),
-            GameConfig.skyHorizon.withOpacity(0.30),
-            const Color(0x00E9A063),
+            theme.skyHorizon.withOpacity(0),
+            theme.skyHorizon.withOpacity(theme.hazeOpacity),
+            theme.skyHorizon.withOpacity(0),
           ],
           const [0.0, 0.68, 1.0],
         ),

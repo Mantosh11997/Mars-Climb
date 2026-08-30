@@ -1,4 +1,5 @@
 import '../config.dart';
+import 'theme.dart';
 
 /// A single, finite course.
 ///
@@ -15,6 +16,7 @@ class Level {
     required this.amplitude,
     required this.wavelength,
     required this.slopeBudget,
+    required this.theme,
     this.cellSpacing = GameConfig.cellSpacing,
     this.oxygenIdleDrain = GameConfig.oxygenIdleDrain,
     this.oxygenThrottleDrain = GameConfig.oxygenThrottleDrain,
@@ -43,6 +45,10 @@ class Level {
   /// you; 0.9 will punish a bad line and demands momentum. Above 1.0 the
   /// course is literally unclimbable, and the test fails.
   final double slopeBudget;
+
+  /// Sky, scenery and ground palette. Each course gets its own so no two
+  /// read as the same place.
+  final LevelTheme theme;
 
   /// Average metres between energy cells. Longer courses need these to
   /// keep the oxygen clock survivable.
@@ -86,6 +92,7 @@ const Level level1 = Level(
   amplitude: 4.42,
   wavelength: 22.0,
   slopeBudget: 0.62,
+  theme: duskPlains,
   cellSpacing: 16.0,
 );
 
@@ -99,6 +106,7 @@ const Level level2 = Level(
   amplitude: 3.63,
   wavelength: 16.5,
   slopeBudget: 0.74,
+  theme: noonBasin,
   cellSpacing: 17.0,
   oxygenIdleDrain: 1.8,
 );
@@ -113,6 +121,7 @@ const Level level3 = Level(
   amplitude: 7.88,
   wavelength: 38.0,
   slopeBudget: 0.72,
+  theme: dustStorm,
   cellSpacing: 19.0,
   oxygenIdleDrain: 1.7,
   oxygenThrottleDrain: 3.1,
@@ -128,6 +137,7 @@ const Level level4 = Level(
   amplitude: 4.87,
   wavelength: 19.0,
   slopeBudget: 0.88,
+  theme: polarNight,
   cellSpacing: 15.0,
   oxygenIdleDrain: 2.0,
   oxygenThrottleDrain: 3.8,

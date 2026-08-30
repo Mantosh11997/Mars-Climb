@@ -5,13 +5,17 @@ import 'package:flame_forge2d/flame_forge2d.dart';
 
 import '../config.dart';
 import 'driver_head.dart';
+import 'vehicle.dart';
 import 'wheel.dart';
 
 /// Throttle state driven by the on-screen buttons.
 enum Throttle { none, forward, reverse }
 
-/// The rover: chassis body + two wheels on spring wheel-joints, with the
-/// driver art and a welded head body on top.
+/// The player's machine: chassis body + two wheels on spring wheel-joints,
+/// with the driver art and a welded head body on top.
+///
+/// Every dimension and handling number comes from the [Vehicle] it is
+/// built from, so this class is the same code for all five machines.
 ///
 /// [Rover] is the chassis BodyComponent itself; the wheels and head are
 /// siblings in the physics world (joints can't cross component trees in
@@ -19,6 +23,7 @@ enum Throttle { none, forward, reverse }
 class Rover extends BodyComponent {
   Rover({
     required this.spawn,
+    required this.vehicle,
     required this.chassisSprite,
     required this.wheelSprite,
     required this.driverSprite,
@@ -29,6 +34,7 @@ class Rover extends BodyComponent {
   }
 
   final Vector2 spawn;
+  final Vehicle vehicle;
   final Sprite chassisSprite;
   final Sprite wheelSprite;
   final Sprite driverSprite;
@@ -102,12 +108,12 @@ class Rover extends BodyComponent {
   Body createBody() {
     final shape = PolygonShape()
       ..setAsBoxXY(
-        GameConfig.chassisSize.x / 2,
-        GameConfig.chassisSize.y / 2,
+        vehicle.chassisSize.x / 2,
+        vehicle.chassisSize.y / 2,
       );
 
     final fixtureDef = FixtureDef(shape)
-      ..density = GameConfig.chassisDensity
+      ..density = vehicle.chassisDensity
       ..friction = GameConfig.chassisFriction
       ..restitution = GameConfig.chassisRestitution
       ..filter.categoryBits = GameConfig.categoryVehicle
@@ -131,8 +137,8 @@ class Rover extends BodyComponent {
       SpriteComponent(
         sprite: chassisSprite,
         anchor: Anchor.center,
-        size: GameConfig.chassisSpriteSize,
-        position: GameConfig.chassisSpriteOffset,
+        size: vehicle.spriteSize,
+        position: vehicle.spriteOffset,
         priority: 1,
       ),
     );
@@ -141,27 +147,30 @@ class Rover extends BodyComponent {
       SpriteComponent(
         sprite: driverSprite,
         anchor: Anchor.center,
-        size: GameConfig.driverSpriteSize,
-        position: GameConfig.driverSpriteOffset,
+        size: vehicle.driverSize,
+        position: vehicle.driverOffset,
         priority: 2,
       ),
     );
 
     // --- Wheels --------------------------------------------------------
     rearWheel = Wheel(
-      spawn: spawn + GameConfig.rearWheelAnchor,
+      spawn: spawn + vehicle.rearAnchor,
       sprite: wheelSprite,
       isFront: false,
+      vehicle: vehicle,
     );
     frontWheel = Wheel(
-      spawn: spawn + GameConfig.frontWheelAnchor,
+      spawn: spawn + vehicle.frontAnchor,
       sprite: wheelSprite,
       isFront: true,
+      vehicle: vehicle,
     );
 
     head = DriverHead(
-      spawn: spawn + GameConfig.headOffset,
+      spawn: spawn + vehicle.headOffset,
       onGroundImpact: onHeadImpact,
+      vehicle: vehicle,
     );
 
     // Joints need real bodies on both ends, and a body only exists once
@@ -210,8 +219,8 @@ class Rover extends BodyComponent {
       // stiffness/damping. If you bump the package and this stops
       // compiling, convert with:
       //   omega = 2*pi*f;  stiffness = m*omega^2;  damping = 2*m*zeta*omega
-      ..frequencyHz = GameConfig.suspensionFrequencyHz
-      ..dampingRatio = GameConfig.suspensionDampingRatio;
+      ..frequencyHz = vehicle.suspensionFrequencyHz
+      ..dampingRatio = vehicle.suspensionDampingRatio;
 
     // forge2d's WheelJoint has no translation limit, so the spring itself
     // is what stops the wheel - there is no hard stop at full travel.
@@ -239,12 +248,12 @@ class Rover extends BodyComponent {
   }
 
   void _driveAll(double speed, double torque) {
-    if (GameConfig.rearWheelDrive) {
+    if (vehicle.rearWheelDrive) {
       _applyMotor(_rearJoint, speed, torque);
     } else {
       _applyMotor(_rearJoint, 0, 0);
     }
-    if (GameConfig.frontWheelDrive) {
+    if (vehicle.frontWheelDrive) {
       _applyMotor(_frontJoint, speed, torque);
     } else {
       _applyMotor(_frontJoint, 0, 0);
@@ -265,12 +274,12 @@ class Rover extends BodyComponent {
     switch (throttle) {
       case Throttle.forward:
         _driveAll(
-          GameConfig.driveDirection * GameConfig.engineMaxMotorSpeed,
-          GameConfig.engineMaxTorque,
+          GameConfig.driveDirection * vehicle.engineMaxMotorSpeed,
+          vehicle.engineMaxTorque,
         );
         // Nose-up torque so hard acceleration pops a wheelie.
         body.applyTorque(
-          GameConfig.driveDirection * -GameConfig.chassisPitchTorque,
+          GameConfig.driveDirection * -vehicle.chassisPitchTorque,
         );
 
       case Throttle.reverse:
@@ -281,12 +290,12 @@ class Rover extends BodyComponent {
         } else {
           _driveAll(
             -GameConfig.driveDirection *
-                GameConfig.engineMaxMotorSpeed *
+                vehicle.engineMaxMotorSpeed *
                 GameConfig.reverseMotorSpeedFactor,
-            GameConfig.engineMaxTorque * GameConfig.reverseTorqueFactor,
+            vehicle.engineMaxTorque * GameConfig.reverseTorqueFactor,
           );
           body.applyTorque(
-            GameConfig.driveDirection * GameConfig.chassisPitchTorque * 0.5,
+            GameConfig.driveDirection * vehicle.chassisPitchTorque * 0.5,
           );
         }
 

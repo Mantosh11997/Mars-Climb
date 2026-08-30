@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../game/config.dart';
 import '../game/level/level.dart';
 import '../game/mars_climb_game.dart';
+import '../game/vehicle/vehicle.dart';
 import 'controls.dart';
 import 'hud.dart';
 import 'outcome_overlay.dart';
@@ -14,20 +15,29 @@ import 'outcome_overlay.dart';
 /// play another course we just push a new GameScreen rather than trying to
 /// rebuild a live physics world in place.
 class GameScreen extends StatefulWidget {
-  const GameScreen({super.key, required this.level});
+  const GameScreen({
+    super.key,
+    required this.level,
+    required this.vehicle,
+  });
 
   final Level level;
+  final Vehicle vehicle;
 
   @override
   State<GameScreen> createState() => _GameScreenState();
 }
 
 class _GameScreenState extends State<GameScreen> {
-  late final MarsClimbGame _game = MarsClimbGame(level: widget.level);
+  late final MarsClimbGame _game =
+      MarsClimbGame(level: widget.level, vehicle: widget.vehicle);
 
+  /// Carry the chosen machine over to the next course.
   void _openLevel(Level level) {
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute<void>(builder: (_) => GameScreen(level: level)),
+      MaterialPageRoute<void>(
+        builder: (_) => GameScreen(level: level, vehicle: widget.vehicle),
+      ),
     );
   }
 

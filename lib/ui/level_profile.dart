@@ -6,20 +6,21 @@ import '../game/level/level_stats.dart';
 
 /// Draws a course's real silhouette, taken from the terrain generator.
 class LevelProfile extends StatelessWidget {
-  const LevelProfile({super.key, required this.level, this.height = 92});
+  const LevelProfile({super.key, required this.level, this.height});
 
   final Level level;
-  final double height;
+  /// Fixed height, or null to fill the space the parent gives it (put it
+  /// in an Expanded).
+  final double? height;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: height,
-      width: double.infinity,
-      child: CustomPaint(
-        painter: _ProfilePainter(LevelStats.of(level).profile),
-      ),
+    final painter = CustomPaint(
+      size: Size.infinite,
+      painter: _ProfilePainter(LevelStats.of(level).profile),
     );
+    if (height == null) return SizedBox(width: double.infinity, child: painter);
+    return SizedBox(height: height, width: double.infinity, child: painter);
   }
 }
 

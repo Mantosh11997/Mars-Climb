@@ -31,11 +31,12 @@ void main() {
 
   Future<void> shoot({
     required String name,
+    required Level level,
     required double roverX,
     double width = 2000,
     double height = 890,
   }) async {
-    final gen = TerrainGenerator(level1);
+    final gen = TerrainGenerator(level);
 
     // Match MarsClimbGame: camera centred on the rover, plus look-ahead,
     // sitting cameraHeightOffset above it.
@@ -56,6 +57,8 @@ void main() {
       cameraPosition: () => cam,
       viewportSize: () => Vector2(width, height),
       cameraZoom: () => zoom,
+      theme: level.theme,
+      seed: level.seed,
     ).render(canvas);
 
     // --- world: exactly the transform Flame's viewfinder applies -------
@@ -68,7 +71,7 @@ void main() {
     // Every chunk the streaming window would have alive.
     final centre = (roverX / GameConfig.terrainChunkWidth).floor();
     final maxIndex =
-        (level1.worldEndX / GameConfig.terrainChunkWidth).ceil() - 1;
+        (level.worldEndX / GameConfig.terrainChunkWidth).ceil() - 1;
     final first =
         (centre - GameConfig.terrainChunksBehind).clamp(0, maxIndex);
     final last = (centre + GameConfig.terrainChunksAhead).clamp(0, maxIndex);
@@ -104,8 +107,14 @@ void main() {
     const dir =
         String.fromEnvironment('PREVIEW_DIR', defaultValue: 'build/previews');
     Directory(dir).createSync(recursive: true);
-    await shoot(name: '$dir/preview_39m.png', roverX: 39);
-    await shoot(name: '$dir/preview_75m.png', roverX: 75);
-    await shoot(name: '$dir/preview_180m.png', roverX: 180);
+
+    // One frame per course, so the per-level themes can be compared.
+    for (final level in levels) {
+      await shoot(
+        name: '$dir/theme_${level.number}_${level.theme.name.replaceAll(' ', '_')}.png',
+        level: level,
+        roverX: 150,
+      );
+    }
   });
 }

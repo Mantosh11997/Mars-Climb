@@ -84,6 +84,7 @@ lib/
 │   ├── mars_climb_game.dart           Forge2DGame: camera, run lifecycle, tick
 │   ├── level/
 │   │   ├── level.dart                 ★ Level definitions (all courses here)
+│   │   ├── theme.dart                 ★ Per-course sky/scenery/ground palettes
 │   │   ├── level_stats.dart           Memoised grade/relief/profile per course
 │   │   ├── finish_line.dart           Checkered banner at the course end
 │   │   └── start_wall.dart            Invisible wall behind the start line
@@ -95,6 +96,7 @@ lib/
 │   │   ├── terrain_chunk.dart         One chain-shape body + its ground fill
 │   │   └── terrain_manager.dart       Streams chunks in/out, culls, spawns cells
 │   ├── vehicle/
+│   │   ├── vehicle.dart               ★ Vehicle definitions (the garage)
 │   │   ├── rover.dart                 Chassis body, wheel joints, drive logic
 │   │   ├── wheel.dart                 Circle body + spinning tyre sprite
 │   │   └── driver_head.dart           Welded head body — the flip detector
@@ -103,7 +105,8 @@ lib/
 │   └── world/
 │       └── mars_backdrop.dart         Sky gradient, sun, stars, 3 parallax bands
 └── ui/
-    ├── level_select_screen.dart       Course picker (app home)
+    ├── home_screen.dart               Garage: machine rail + course rail
+    ├── vehicle_stats.dart             Normalised stat bars across the roster
     ├── level_profile.dart             Draws a course's real silhouette
     ├── game_screen.dart               Hosts one run of one course
     ├── hud.dart                       Oxygen, cells, level progress, speed
@@ -111,14 +114,39 @@ lib/
     └── outcome_overlay.dart           Win + lose panel, run summary
 ```
 
+## The garage
+
+| Machine | Character |
+|---|---|
+| **Pathfinder** | The yardstick — no weakness, no speciality |
+| **Skimmer** | Feather-light and fast, slips on anything steep |
+| **Ox** | Slow and immensely heavy, climbs absolutely anything |
+| **Leaper** | Enormous suspension travel, lands from height, twitchy |
+| **Anchor** | Long and low, nearly unflippable, clumsy over ripples |
+
+A vehicle is one `Vehicle` in `game/vehicle/vehicle.dart` plus two PNGs — a
+chassis and a wheel. Every dimension and handling number comes from that
+object, so `rover.dart` is the same code for all five. Wheel anchors were
+measured off each piece of art by compositing the wheels onto the chassis.
+
+`vehicles_test` checks the assets exist, the wheels sit inside their arches
+the right way round, and that no single machine leads every stat — if one did,
+there would be no reason to drive the others.
+
 ## The courses
 
-| # | Name | Length | Max grade | Relief | Character |
-|---|---|---|---|---|---|
-| 1 | Acidalia Flats | 520 m | 31° | 6 m | Shakedown; forgiving rolling dunes |
-| 2 | Chryse Ripples | 640 m | 37° | 6 m | Short choppy ridges, never settles |
-| 3 | Tharsis Rollers | 780 m | 36° | 10 m | Long heavy swells, big airtime |
-| 4 | Olympus Ascent | 900 m | 44° | 7 m | Steep walls, no room for a run-up |
+| # | Name | Length | Max grade | Relief | Theme | Character |
+|---|---|---|---|---|---|---|
+| 1 | Acidalia Flats | 520 m | 31° | 6 m | Dusk | Shakedown; forgiving rolling dunes |
+| 2 | Chryse Ripples | 640 m | 37° | 6 m | Noon | Short choppy ridges, never settles |
+| 3 | Tharsis Rollers | 780 m | 36° | 10 m | Dust storm | Long heavy swells, big airtime |
+| 4 | Olympus Ascent | 900 m | 44° | 7 m | Night | Steep walls, no room for a run-up |
+
+Every course carries its own `LevelTheme` — sky gradient, three scenery bands,
+ground, sun and star density — so no two read as the same place. The one rule a
+theme must respect is **atmospheric perspective**: each band steps lighter as it
+recedes, and every band stays lighter than the ground. Inverting that is what
+once made distant dunes look like a hole in the world.
 
 Adding a course is one `const Level` in `game/level/level.dart` plus an entry
 in `levels`. Everything else — terrain, streaming, finish line, level select
