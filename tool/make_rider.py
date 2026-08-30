@@ -37,6 +37,7 @@ def main():
     kill = (Y >= SEAM[0][0]) & (X < edge[:, None])
 
     kill |= (X > 755) & (Y > 420) & (Y < 512)        # rim above the fists
+    kill |= (X > 790) & (Y > 420) & (Y < 566)        # the wedge between them
     kill |= (X > 872) & (Y > 420) & (Y < 800)        # rim beyond them
     kill |= (X > 690) & (X < 860) & (Y > 690) & (Y < 830)  # rim below
 
