@@ -12,9 +12,21 @@ import '../game/vehicle/vehicle.dart';
 /// which is the whole point: a wheel sitting wrong is visible here before
 /// anyone has to drive the thing.
 class VehiclePreview extends StatelessWidget {
-  const VehiclePreview({super.key, required this.vehicle});
+  const VehiclePreview({
+    super.key,
+    required this.vehicle,
+    this.showDriver = false,
+  });
 
   final Vehicle vehicle;
+
+  /// Whether to seat the driver on the machine.
+  ///
+  /// Off for the selection screens: picking a machine is about the machine,
+  /// and a rider draped over it hides half the bodywork you are choosing
+  /// between. On for the garage render test, which is how driver placement
+  /// gets checked without building the game.
+  final bool showDriver;
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +36,6 @@ class VehiclePreview extends StatelessWidget {
           0.5 + (anchor.x - vehicle.spriteOffset.x) / vehicle.spriteSize.x,
           0.5 + (anchor.y - vehicle.spriteOffset.y) / vehicle.spriteSize.y,
         );
-
 
     return LayoutBuilder(
       builder: (context, c) {
@@ -83,7 +94,7 @@ class VehiclePreview extends StatelessWidget {
                 // exactly as they do in game. Every wheel the machine
                 // carries, whether that is two or six.
                 for (final mount in vehicle.wheels) wheelAt(mount),
-                if (vehicle.driverBehind) driver(),
+                if (showDriver && vehicle.driverBehind) driver(),
                 Positioned.fill(
                   child: Image.asset(
                     'assets/images/${vehicle.bodyAsset}',
@@ -92,7 +103,7 @@ class VehiclePreview extends StatelessWidget {
                   ),
                 ),
                 // ...and in a cab he rides on top of it, as in game.
-                if (!vehicle.driverBehind) driver(),
+                if (showDriver && !vehicle.driverBehind) driver(),
               ],
             ),
           ),

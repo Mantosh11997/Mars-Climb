@@ -43,7 +43,9 @@ void main() {
                     padding: const EdgeInsets.all(8),
                     child: Column(
                       children: [
-                        Expanded(child: VehiclePreview(vehicle: v)),
+                        Expanded(
+                            child:
+                                VehiclePreview(vehicle: v, showDriver: true)),
                         Text(
                           '${v.name}  ·  ${v.wheelCount}W  ·  '
                           '${v.topSpeedKmh.round()} km/h',
