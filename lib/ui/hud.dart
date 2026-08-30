@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../game/config.dart';
+import 'palette.dart';
 import '../game/mars_climb_game.dart';
 
 /// Top-of-screen telemetry: oxygen bar, energy cells, distance, speed.
@@ -59,10 +59,10 @@ class _OxygenGauge extends StatelessWidget {
   Widget build(BuildContext context) {
     // Bar shifts from teal to amber to red as the cell drains.
     final color = fraction > 0.5
-        ? GameConfig.cellCore
+        ? Palette.success
         : fraction > 0.22
-            ? const Color(0xFFFFC24B)
-            : const Color(0xFFFF5252);
+            ? Palette.warning
+            : Palette.danger;
 
     return _Panel(
       child: Column(
@@ -71,7 +71,7 @@ class _OxygenGauge extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.bolt, size: 15, color: Colors.white70),
+              const Icon(Icons.bolt, size: 15, color: Palette.inkMuted),
               const SizedBox(width: 5),
               const Text(
                 'FUEL',
@@ -89,7 +89,7 @@ class _OxygenGauge extends StatelessWidget {
             borderRadius: BorderRadius.circular(4),
             child: Stack(
               children: [
-                Container(height: 9, color: const Color(0x33000000)),
+                Container(height: 9, color: Palette.track),
                 AnimatedFractionallySizedBox(
                   duration: const Duration(milliseconds: 140),
                   widthFactor: fraction,
@@ -135,7 +135,7 @@ class _Readout extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(icon, size: 14, color: Colors.white70),
+              Icon(icon, size: 14, color: Palette.inkMuted),
               const SizedBox(width: 5),
               Text(label, style: _labelStyle),
             ],
@@ -144,7 +144,7 @@ class _Readout extends StatelessWidget {
           Text(
             value,
             style: const TextStyle(
-              color: Colors.white,
+              color: Palette.ink,
               fontSize: 17,
               fontWeight: FontWeight.w700,
               letterSpacing: 0.4,
@@ -162,10 +162,10 @@ class _Readout extends StatelessWidget {
                 borderRadius: BorderRadius.circular(3),
                 child: Stack(
                   children: [
-                    Container(height: 4, color: const Color(0x33000000)),
+                    Container(height: 4, color: Palette.track),
                     FractionallySizedBox(
                       widthFactor: progress!.clamp(0.0, 1.0),
-                      child: Container(height: 4, color: GameConfig.accent),
+                      child: Container(height: 4, color: Palette.accent),
                     ),
                   ],
                 ),
@@ -188,9 +188,10 @@ class _Panel extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: BoxDecoration(
-        color: const Color(0xCC1C0F0B),
+        color: Palette.surfaceOverGame,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0x33FF8A3D)),
+        border: Border.all(color: Palette.line),
+        boxShadow: Palette.lift(),
       ),
       child: child,
     );
@@ -201,7 +202,7 @@ class _Panel extends StatelessWidget {
 const double _progressBarWidth = 132;
 
 const _labelStyle = TextStyle(
-  color: Colors.white70,
+  color: Palette.inkMuted,
   fontSize: 10,
   fontWeight: FontWeight.w700,
   letterSpacing: 1.2,

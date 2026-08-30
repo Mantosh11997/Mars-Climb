@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../game/config.dart';
+import 'palette.dart';
 import '../game/mars_climb_game.dart';
 import '../game/vehicle/rover.dart';
 
@@ -52,7 +52,7 @@ class _ControlsState extends State<Controls> {
               _PedalButton(
                 label: 'BRAKE',
                 icon: Icons.arrow_back_rounded,
-                color: const Color(0xFF9A2C2C),
+                color: Palette.danger,
                 pressed: _brake,
                 onChanged: (v) {
                   setState(() => _brake = v);
@@ -63,7 +63,7 @@ class _ControlsState extends State<Controls> {
               _PedalButton(
                 label: 'GAS',
                 icon: Icons.arrow_forward_rounded,
-                color: GameConfig.accent,
+                color: Palette.accent,
                 pressed: _gas,
                 onChanged: (v) {
                   setState(() => _gas = v);
@@ -111,7 +111,7 @@ class _PedalButton extends StatelessWidget {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: color.withOpacity(pressed ? 0.92 : 0.62),
-            border: Border.all(color: Colors.white.withOpacity(0.35), width: 2),
+            border: Border.all(color: Colors.white.withOpacity(0.75), width: 2),
             boxShadow: [
               BoxShadow(
                 color: color.withOpacity(pressed ? 0.55 : 0.25),

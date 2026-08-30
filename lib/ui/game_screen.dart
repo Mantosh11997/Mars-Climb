@@ -8,6 +8,7 @@ import '../game/vehicle/vehicle.dart';
 import 'controls.dart';
 import 'hud.dart';
 import 'outcome_overlay.dart';
+import 'palette.dart';
 
 /// Hosts one run of one course.
 ///
@@ -44,7 +45,7 @@ class _GameScreenState extends State<GameScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF160B08),
+      backgroundColor: Palette.gameLetterbox,
       body: GameWidget<MarsClimbGame>(
         game: _game,
         overlayBuilderMap: {

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../game/config.dart';
+import 'palette.dart';
 import '../game/level/level.dart';
 import '../game/mars_climb_game.dart';
 
@@ -27,11 +27,11 @@ class OutcomeOverlay extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = game.state;
     final won = s.hasWon;
-    final accent = won ? GameConfig.cellCore : GameConfig.accent;
+    final accent = won ? Palette.success : Palette.danger;
     final next = levelAfter(s.level);
 
     return Container(
-      color: const Color(0xD9160B08),
+      color: Palette.scrim,
       alignment: Alignment.center,
       child: SingleChildScrollView(
         child: Container(
@@ -39,9 +39,10 @@ class OutcomeOverlay extends StatelessWidget {
           margin: const EdgeInsets.symmetric(vertical: 24),
           padding: const EdgeInsets.all(26),
           decoration: BoxDecoration(
-            color: const Color(0xF21F110C),
+            color: Palette.surfaceOverGame,
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: accent.withOpacity(0.4)),
+            border: Border.all(color: accent.withOpacity(0.45), width: 2),
+            boxShadow: Palette.lift(strong: true),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -68,7 +69,7 @@ class OutcomeOverlay extends StatelessWidget {
                 s.outcomeBlurb,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  color: Colors.white70,
+                  color: Palette.inkMuted,
                   fontSize: 13,
                   height: 1.45,
                 ),
@@ -129,7 +130,7 @@ class OutcomeOverlay extends StatelessWidget {
                   'game/level/level.dart.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: Colors.white38,
+                    color: Palette.inkFaint,
                     fontSize: 11,
                     height: 1.4,
                   ),
@@ -161,7 +162,7 @@ class _PrimaryButton extends StatelessWidget {
       child: FilledButton(
         style: FilledButton.styleFrom(
           backgroundColor: color,
-          foregroundColor: const Color(0xFF14100C),
+          foregroundColor: Palette.onAccent,
           padding: const EdgeInsets.symmetric(vertical: 15),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -192,8 +193,8 @@ class _SecondaryButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return OutlinedButton(
       style: OutlinedButton.styleFrom(
-        foregroundColor: Colors.white70,
-        side: BorderSide(color: Colors.white.withOpacity(0.22)),
+        foregroundColor: Palette.inkMuted,
+        side: const BorderSide(color: Palette.line),
         padding: const EdgeInsets.symmetric(vertical: 13),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
@@ -225,7 +226,7 @@ class _Stat extends StatelessWidget {
         Text(
           label,
           style: const TextStyle(
-            color: Colors.white54,
+            color: Palette.inkFaint,
             fontSize: 10,
             fontWeight: FontWeight.w700,
             letterSpacing: 1.3,
@@ -235,7 +236,7 @@ class _Stat extends StatelessWidget {
         Text(
           value,
           style: const TextStyle(
-            color: Colors.white,
+            color: Palette.ink,
             fontSize: 21,
             fontWeight: FontWeight.w800,
           ),

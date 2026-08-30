@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../game/config.dart';
 import '../game/vehicle/vehicle.dart';
+import 'palette.dart';
 import 'course_select_screen.dart';
 import 'vehicle_preview.dart';
 import 'vehicle_stats.dart';
@@ -38,7 +38,7 @@ class _MachineSelectScreenState extends State<MachineSelectScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFF1A1026), Color(0xFF4A2320), Color(0xFF7C3E22)],
+            colors: Palette.pageGradient,
           ),
         ),
         child: SafeArea(
@@ -72,8 +72,8 @@ class _MachineSelectScreenState extends State<MachineSelectScreen> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.66),
+                  style: const TextStyle(
+                    color: Palette.inkMuted,
                     fontSize: 12,
                     fontStyle: FontStyle.italic,
                   ),
@@ -87,8 +87,8 @@ class _MachineSelectScreenState extends State<MachineSelectScreen> {
                   height: 48,
                   child: FilledButton(
                     style: FilledButton.styleFrom(
-                      backgroundColor: GameConfig.accent,
-                      foregroundColor: const Color(0xFF1A0C04),
+                      backgroundColor: Palette.accent,
+                      foregroundColor: Palette.onAccent,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
@@ -153,23 +153,13 @@ class _MachineCard extends StatelessWidget {
             margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.30),
+              color: Palette.surface,
               borderRadius: BorderRadius.circular(22),
               border: Border.all(
-                color: selected
-                    ? GameConfig.accent.withOpacity(0.9)
-                    : Colors.white.withOpacity(0.10),
+                color: selected ? Palette.accent : Palette.line,
                 width: selected ? 2 : 1,
               ),
-              boxShadow: selected
-                  ? [
-                      BoxShadow(
-                        color: GameConfig.accent.withOpacity(0.30),
-                        blurRadius: 30,
-                        spreadRadius: 1,
-                      ),
-                    ]
-                  : null,
+              boxShadow: Palette.lift(strong: selected),
             ),
             child: Column(
               children: [
@@ -181,7 +171,7 @@ class _MachineCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: Palette.ink,
                     fontSize: 19,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 2.5,
@@ -202,8 +192,8 @@ class _MachineCard extends StatelessWidget {
                           const SizedBox(height: 2),
                           Text(
                             '${vehicle.topSpeedKmh.round()} km/h top speed',
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.4),
+                            style: const TextStyle(
+                              color: Palette.inkFaint,
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
                             ),
@@ -238,8 +228,8 @@ class _StatBar extends StatelessWidget {
             width: 62,
             child: Text(
               label,
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.45),
+              style: const TextStyle(
+                color: Palette.inkMuted,
                 fontSize: 9,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 1,
@@ -251,10 +241,10 @@ class _StatBar extends StatelessWidget {
               borderRadius: BorderRadius.circular(3),
               child: Stack(
                 children: [
-                  Container(height: 5, color: Colors.white.withOpacity(0.10)),
+                  Container(height: 5, color: Palette.track),
                   FractionallySizedBox(
                     widthFactor: value.clamp(0.05, 1.0),
-                    child: Container(height: 5, color: GameConfig.accent),
+                    child: Container(height: 5, color: Palette.accent),
                   ),
                 ],
               ),
@@ -284,7 +274,7 @@ class _Header extends StatelessWidget {
             IconButton(
               onPressed: onBack,
               icon: const Icon(Icons.arrow_back_rounded),
-              color: Colors.white70,
+              color: Palette.inkMuted,
             ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -292,24 +282,18 @@ class _Header extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: TextStyle(
-                  color: Colors.white,
+                style: const TextStyle(
+                  color: Palette.ink,
                   fontSize: 22,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 4,
-                  shadows: [
-                    Shadow(
-                      color: GameConfig.accent.withOpacity(0.6),
-                      blurRadius: 20,
-                    ),
-                  ],
                 ),
               ),
               const SizedBox(height: 2),
               Text(
                 subtitle,
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.5),
+                style: const TextStyle(
+                  color: Palette.accent,
                   fontSize: 10,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 2.4,
@@ -341,9 +325,7 @@ class _Dots extends StatelessWidget {
             width: i == index ? 20 : 6,
             height: 6,
             decoration: BoxDecoration(
-              color: i == index
-                  ? GameConfig.accent
-                  : Colors.white.withOpacity(0.25),
+              color: i == index ? Palette.accent : Palette.line,
               borderRadius: BorderRadius.circular(3),
             ),
           ),

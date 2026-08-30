@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
-import '../game/config.dart';
 import '../game/level/level.dart';
 import '../game/level/level_stats.dart';
 import '../game/vehicle/vehicle.dart';
 import 'game_screen.dart';
 import 'level_profile.dart';
 import 'machine_select_screen.dart';
+import 'palette.dart';
 import 'vehicle_preview.dart';
 
 /// Step two: pick a course, with the chosen machine carried through.
@@ -46,7 +46,14 @@ class _CourseSelectScreenState extends State<CourseSelectScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [theme.skyTop, theme.skyMid, theme.groundFillDeep],
+            // The page stays light; the selected course still tints the
+            // foot of it, so swiping between courses feels like moving
+            // between places.
+            colors: [
+              Palette.pageGradient[0],
+              Palette.pageGradient[1],
+              Color.lerp(Palette.pageGradient[2], theme.skyLow, 0.35)!,
+            ],
             stops: const [0.0, 0.55, 1.0],
           ),
         ),
@@ -99,8 +106,8 @@ class _CourseSelectScreenState extends State<CourseSelectScreen> {
                   height: 48,
                   child: FilledButton(
                     style: FilledButton.styleFrom(
-                      backgroundColor: GameConfig.accent,
-                      foregroundColor: const Color(0xFF1A0C04),
+                      backgroundColor: Palette.accent,
+                      foregroundColor: Palette.onAccent,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
@@ -171,9 +178,7 @@ class _CourseCard extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: selected
-                    ? GameConfig.accent.withOpacity(0.9)
-                    : Colors.white.withOpacity(0.10),
+                color: selected ? Palette.accent : Palette.line,
                 width: selected ? 2 : 1,
               ),
               gradient: LinearGradient(
@@ -181,14 +186,7 @@ class _CourseCard extends StatelessWidget {
                 end: Alignment.bottomCenter,
                 colors: [theme.skyTop, theme.skyLow],
               ),
-              boxShadow: selected
-                  ? [
-                      BoxShadow(
-                        color: GameConfig.accent.withOpacity(0.22),
-                        blurRadius: 26,
-                      ),
-                    ]
-                  : null,
+              boxShadow: Palette.lift(strong: selected),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -257,7 +255,7 @@ class _Tag extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.32),
+        color: Colors.black.withOpacity(0.34),
         borderRadius: BorderRadius.circular(7),
       ),
       child: Text(
