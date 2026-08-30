@@ -9,9 +9,9 @@ import 'package:mars_climb/game/vehicle/vehicle.dart';
 /// are a missing asset, a typo'd filename, or geometry that puts the
 /// wheels somewhere the art has no arch.
 void main() {
-  test('every vehicle has both of its sprites on disk', () {
+  test('every vehicle has all of its sprites on disk', () {
     for (final v in vehicles) {
-      for (final asset in [v.bodyAsset, v.wheelAsset]) {
+      for (final asset in [v.bodyAsset, v.wheelAsset, v.driverAsset]) {
         expect(
           File('assets/images/$asset').existsSync(),
           isTrue,

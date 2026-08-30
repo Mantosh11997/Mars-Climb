@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 import '../game/vehicle/vehicle.dart';
 
 /// A machine shown the way it actually drives - chassis with its wheels
-/// fitted, not the bare chassis art.
+/// fitted and its driver aboard, not the bare chassis art.
 ///
-/// Wheel placement comes from the same [Vehicle] anchors the physics uses,
+/// Every position comes from the same [Vehicle] fields the physics uses,
 /// converted back into fractions of the body sprite. So the garage can
-/// never show a machine assembled differently from the one you drive.
+/// never show a machine assembled differently from the one you drive -
+/// which is the whole point: a wheel sitting wrong is visible here before
+/// anyone has to drive the thing.
 class VehiclePreview extends StatelessWidget {
   const VehiclePreview({super.key, required this.vehicle});
 
@@ -53,6 +55,23 @@ class VehiclePreview extends StatelessWidget {
           );
         }
 
+        Widget driver() {
+          final f = frac(vehicle.driverOffset);
+          final dw = vehicle.driverSize.x / vehicle.spriteSize.x * w;
+          final dh = vehicle.driverSize.y / vehicle.spriteSize.y * h;
+          return Positioned(
+            left: f.dx * w - dw / 2,
+            top: f.dy * h - dh / 2,
+            width: dw,
+            height: dh,
+            child: Image.asset(
+              'assets/images/${vehicle.driverAsset}',
+              fit: BoxFit.contain,
+              filterQuality: FilterQuality.medium,
+            ),
+          );
+        }
+
         return Center(
           child: SizedBox(
             width: w,
@@ -64,6 +83,7 @@ class VehiclePreview extends StatelessWidget {
                 // exactly as they do in game. Every wheel the machine
                 // carries, whether that is two or six.
                 for (final mount in vehicle.wheels) wheelAt(mount),
+                if (vehicle.driverBehind) driver(),
                 Positioned.fill(
                   child: Image.asset(
                     'assets/images/${vehicle.bodyAsset}',
@@ -71,6 +91,8 @@ class VehiclePreview extends StatelessWidget {
                     filterQuality: FilterQuality.medium,
                   ),
                 ),
+                // ...and in a cab he rides on top of it, as in game.
+                if (!vehicle.driverBehind) driver(),
               ],
             ),
           ),

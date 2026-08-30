@@ -57,7 +57,7 @@ class MarsClimbGame extends Forge2DGame {
 
     _chassisSprite = await loadSprite(vehicle.bodyAsset);
     _wheelSprite = await loadSprite(vehicle.wheelAsset);
-    _driverSprite = await loadSprite('character.png');
+    _driverSprite = await loadSprite(vehicle.driverAsset);
     _canSprite = await loadSprite('fuel_can.png');
 
     camera.viewfinder.anchor = Anchor.center;

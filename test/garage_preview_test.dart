@@ -65,7 +65,7 @@ void main() {
 
     await tester.runAsync(() async {
       for (final v in vehicles) {
-        for (final a in [v.bodyAsset, v.wheelAsset]) {
+        for (final a in [v.bodyAsset, v.wheelAsset, v.driverAsset]) {
           await precacheImage(
             AssetImage('assets/images/$a'),
             tester.element(find.byType(MaterialApp)),

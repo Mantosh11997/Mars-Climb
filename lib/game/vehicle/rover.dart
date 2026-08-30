@@ -148,7 +148,7 @@ class Rover extends BodyComponent {
         anchor: Anchor.center,
         size: vehicle.driverSize,
         position: vehicle.driverOffset,
-        priority: 2,
+        priority: vehicle.driverBehind ? 0 : 2,
       ),
     );
 
