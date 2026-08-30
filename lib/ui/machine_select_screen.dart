@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../build_info.dart';
+
 import '../game/vehicle/vehicle.dart';
 import 'palette.dart';
 import 'course_select_screen.dart';
@@ -47,6 +49,9 @@ class _MachineSelectScreenState extends State<MachineSelectScreen> {
               const _Header(
                 title: 'MARS CLIMB',
                 subtitle: 'STEP 1  ·  SELECT MACHINE',
+                // Only on the first screen: enough to tell one APK from
+                // another, small enough to ignore while playing.
+                trailing: 'BUILD $buildId',
               ),
               Expanded(
                 child: PageView.builder(
@@ -258,11 +263,19 @@ class _StatBar extends StatelessWidget {
 
 /// Shared chrome, used by both selection screens.
 class _Header extends StatelessWidget {
-  const _Header({required this.title, required this.subtitle, this.onBack});
+  const _Header({
+    required this.title,
+    required this.subtitle,
+    this.onBack,
+    this.trailing,
+  });
 
   final String title;
   final String subtitle;
   final VoidCallback? onBack;
+
+  /// Optional quiet note pinned to the far end of the bar.
+  final String? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -301,6 +314,18 @@ class _Header extends StatelessWidget {
               ),
             ],
           ),
+          if (trailing != null) ...[
+            const Spacer(),
+            Text(
+              trailing!,
+              style: const TextStyle(
+                color: Palette.inkFaint,
+                fontSize: 9,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.2,
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -341,15 +366,21 @@ class GarageHeader extends StatelessWidget {
     required this.title,
     required this.subtitle,
     this.onBack,
+    this.trailing,
   });
 
   final String title;
   final String subtitle;
   final VoidCallback? onBack;
+  final String? trailing;
 
   @override
-  Widget build(BuildContext context) =>
-      _Header(title: title, subtitle: subtitle, onBack: onBack);
+  Widget build(BuildContext context) => _Header(
+        title: title,
+        subtitle: subtitle,
+        onBack: onBack,
+        trailing: trailing,
+      );
 }
 
 class GarageDots extends StatelessWidget {

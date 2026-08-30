@@ -131,14 +131,24 @@ jobs:
           set -euo pipefail
           MODE='${{ github.event.inputs.build_mode || 'release' }}'
           echo "Building in $MODE mode"
-          flutter build apk --"$MODE"
+          # --build-number rises every run, so Android treats each APK as
+          # an upgrade rather than refusing to replace the installed one.
+          # BUILD_ID is shown on the machine screen, so a screenshot says
+          # which build it came from.
+          flutter build apk --"$MODE" \
+            --build-name="0.1.${{ github.run_number }}" \
+            --build-number="${{ github.run_number }}" \
+            --dart-define=BUILD_ID="${{ github.run_number }}·${GITHUB_SHA::7}"
 
       - name: Build per-ABI APKs
         if: ${{ github.event.inputs.split_per_abi == 'true' }}
         run: |
           set -euo pipefail
           MODE='${{ github.event.inputs.build_mode || 'release' }}'
-          flutter build apk --"$MODE" --split-per-abi
+          flutter build apk --"$MODE" --split-per-abi \
+            --build-name="0.1.${{ github.run_number }}" \
+            --build-number="${{ github.run_number }}" \
+            --dart-define=BUILD_ID="${{ github.run_number }}·${GITHUB_SHA::7}"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -159,6 +169,7 @@ jobs:
             echo "| Flutter | \`${{ env.FLUTTER_VERSION }}\` |"
             echo "| Mode | \`${{ github.event.inputs.build_mode || 'release' }}\` |"
             echo "| Commit | \`${GITHUB_SHA::8}\` |"
+            echo "| Build label | \`${{ github.run_number }}·${GITHUB_SHA::7}\` (shown on the machine screen) |"
             echo "| Analyze | ${{ steps.analyze.outcome }} |"
             echo "| Tests | ${{ steps.test.outcome }} |"
             echo "| Build | ${{ steps.build.outcome }} |"
