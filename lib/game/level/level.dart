@@ -163,8 +163,25 @@ const Level level4 = Level(
   oxygenThrottleDrain: 4.0,
 );
 
+const Level level5 = Level(
+  number: 5,
+  name: 'Verdant Vale',
+  subtitle: 'Not Mars at all. Grass to the horizon, pines on every crest, '
+      'and the longest climb in the game hiding under all that green.',
+  length: 1000,
+  seed: 3140927,
+  amplitude: 6.90,
+  wavelength: 20.0,
+  macroScale: 3.8,
+  macroWavelengthFactor: 8.5,
+  slopeBudget: 0.95,
+  theme: meadowVale,
+  cellSpacing: 18.0,
+  oxygenIdleDrain: 1.7,
+);
+
 /// Every level, in play order.
-const List<Level> levels = [level1, level2, level3, level4];
+const List<Level> levels = [level1, level2, level3, level4, level5];
 
 /// The next course after [level], or null if it is the last one.
 Level? levelAfter(Level level) {

@@ -1,5 +1,7 @@
 import 'package:flutter/painting.dart';
 
+import '../world/scenery.dart';
+
 /// The look of one course.
 ///
 /// Sky, distant scenery and ground are all per level, so two courses never
@@ -25,6 +27,7 @@ class LevelTheme {
     required this.sun,
     required this.starOpacity,
     required this.hazeOpacity,
+    this.scenery = SceneryStyle.none,
   });
 
   final String name;
@@ -49,6 +52,13 @@ class LevelTheme {
 
   /// Strength of the dust band sitting on the horizon.
   final double hazeOpacity;
+
+  /// What grows on this course, if anything.
+  ///
+  /// Mars gets [SceneryStyle.none] and means it: bare ground is what makes
+  /// it read as Mars. A green course without scenery is not a green course,
+  /// it is the same course tinted green.
+  final SceneryStyle scenery;
 }
 
 /// Dusk over the northern plains. Warm, familiar, the tutorial look.
@@ -139,4 +149,28 @@ const LevelTheme frostDawn = LevelTheme(
   sun: Color(0xFFFFF0E0),
   starOpacity: 0.45,
   hazeOpacity: 0.34,
+);
+
+/// A temperate valley - somewhere that is not Mars at all. Grass, pines
+/// and a high pale sky.
+///
+/// The palette still obeys the atmospheric-perspective rule: the hill
+/// bands step lighter as they recede, and every one of them is lighter
+/// than [groundFill], so the distance reads as distance.
+const LevelTheme meadowVale = LevelTheme(
+  name: 'Meadow',
+  skyTop: Color(0xFFBFDCE8),
+  skyMid: Color(0xFFDDEBDC),
+  skyLow: Color(0xFFF0F5DF),
+  skyHorizon: Color(0xFFFAFBEA),
+  mountainFar: Color(0xFFCBE0B7),
+  mountainMid: Color(0xFFA9CF92),
+  mountainNear: Color(0xFF87BE74),
+  groundFill: Color(0xFF5E9E4E),
+  groundFillDeep: Color(0xFF2A4526),
+  groundCrust: Color(0xFF9AD463),
+  sun: Color(0xFFFFFDEC),
+  starOpacity: 0.0,
+  hazeOpacity: 0.18,
+  scenery: meadowScenery,
 );

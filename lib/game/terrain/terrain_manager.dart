@@ -2,6 +2,7 @@ import 'package:flame/components.dart';
 
 import '../collectibles/fuel_can.dart';
 import '../config.dart';
+import '../world/scenery.dart';
 import 'noise.dart';
 import 'terrain_chunk.dart';
 import 'terrain_generator.dart';
@@ -29,6 +30,7 @@ class TerrainManager extends Component {
 
   final Map<int, TerrainChunk> _chunks = {};
   final Map<int, List<FuelCan>> _cells = {};
+  final Map<int, List<SceneryProp>> _props = {};
 
   /// Ids of cells the player has already banked. Chunk generation is
   /// deterministic, so without this a culled-and-restreamed chunk would
@@ -68,6 +70,9 @@ class TerrainManager extends Component {
     final cells = _spawnCellsFor(index);
     _cells[index] = cells;
 
+    final props = _spawnSceneryFor(index);
+    _props[index] = props;
+
     // Chunks and cells are children of the manager, not of the world.
     // Adding to `this` queues correctly even before the manager itself has
     // mounted, so the very first updateAround() during game setup works.
@@ -75,10 +80,14 @@ class TerrainManager extends Component {
     // not through its parent, so the extra nesting costs nothing.
     add(chunk);
     addAll(cells);
+    addAll(props);
   }
 
   void _removeChunk(int index) {
     _chunks.remove(index)?.removeFromParent();
+    for (final prop in _props.remove(index) ?? const <SceneryProp>[]) {
+      prop.removeFromParent();
+    }
     for (final cell in _cells.remove(index) ?? const <FuelCan>[]) {
       // A cell already collected has removed itself; removing twice is a
       // no-op in Flame, so this stays safe.
@@ -121,6 +130,19 @@ class TerrainManager extends Component {
 
     return cells;
   }
+
+  /// Scatter this chunk's scenery.
+  ///
+  /// The placement itself lives in scenery.dart so the preview render can
+  /// call the very same code, rather than laying out its own world and
+  /// proving nothing.
+  List<SceneryProp> _spawnSceneryFor(int index) => sceneryForChunk(
+        style: generator.level.theme.scenery,
+        seed: generator.level.seed,
+        index: index,
+        chunkWidth: GameConfig.terrainChunkWidth,
+        surfaceY: generator.surfaceY,
+      );
 
   void _handleCollected(FuelCan cell) {
     _collected.add(cell.id);

@@ -11,6 +11,7 @@ import 'package:mars_climb/game/level/level.dart';
 import 'package:mars_climb/game/terrain/terrain_chunk.dart';
 import 'package:mars_climb/game/terrain/terrain_generator.dart';
 import 'package:mars_climb/game/world/mars_backdrop.dart';
+import 'package:mars_climb/game/world/scenery.dart';
 
 /// Renders the real backdrop + terrain code to PNGs, with no device.
 ///
@@ -77,6 +78,25 @@ void main() {
     final last = (centre + GameConfig.terrainChunksAhead).clamp(0, maxIndex);
     for (var i = first; i <= last; i++) {
       TerrainChunk(index: i, generator: gen).render(canvas);
+    }
+
+    // Scenery, placed by the game's own code (see sceneryForChunk), so
+    // this frame shows the wood the streaming manager would actually
+    // build rather than one the preview invented.
+    for (var i = first; i <= last; i++) {
+      for (final prop in sceneryForChunk(
+        style: level.theme.scenery,
+        seed: level.seed,
+        index: i,
+        chunkWidth: GameConfig.terrainChunkWidth,
+        surfaceY: gen.surfaceY,
+      )) {
+        canvas
+          ..save()
+          ..translate(prop.position.x, prop.position.y);
+        prop.render(canvas);
+        canvas.restore();
+      }
     }
 
     // Marker where the rover would be, so framing is readable.
