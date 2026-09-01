@@ -95,6 +95,7 @@ const LevelTheme noonBasin = LevelTheme(
   sun: Color(0xFFFFFDF2),
   starOpacity: 0.0,
   hazeOpacity: 0.42,
+  scenery: marsSurveyScenery,
 );
 
 /// A dust storm rolling in. Ochre, close, oppressive.
@@ -113,6 +114,7 @@ const LevelTheme dustStorm = LevelTheme(
   sun: Color(0xFFFFE9B8),
   starOpacity: 0.0,
   hazeOpacity: 0.62,
+  scenery: marsStormScenery,
 );
 
 /// Deep night on the volcano. Cold, blue, stars everywhere.
@@ -131,6 +133,7 @@ const LevelTheme polarNight = LevelTheme(
   sun: Color(0xFFDCE6FF),
   starOpacity: 1.0,
   hazeOpacity: 0.22,
+  scenery: marsPolarScenery,
 );
 
 /// Sunrise over the ice cap. Pink and pale, cold light.
@@ -273,4 +276,24 @@ const LevelTheme sunbakedMesa = LevelTheme(
   starOpacity: 0.0,
   hazeOpacity: 0.40,
   scenery: desertScenery,
+);
+
+/// A tropical shore late in the day. Pale sand, green shallows stepping
+/// out to a hazy horizon, palms leaning off the dune.
+const LevelTheme sunsetCay = LevelTheme(
+  name: 'Cay',
+  skyTop: Color(0xFF4FA7D8),
+  skyMid: Color(0xFF9FD3E4),
+  skyLow: Color(0xFFDCEFE4),
+  skyHorizon: Color(0xFFF6F0D2),
+  mountainFar: Color(0xFFCFE9DF),
+  mountainMid: Color(0xFF9AD4CB),
+  mountainNear: Color(0xFF6EBBB4),
+  groundFill: Color(0xFFE0C78E),
+  groundFillDeep: Color(0xFF8A6A44),
+  groundCrust: Color(0xFFF7E7BC),
+  sun: Color(0xFFFFF8DC),
+  starOpacity: 0.0,
+  hazeOpacity: 0.30,
+  scenery: beachScenery,
 );

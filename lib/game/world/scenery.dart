@@ -67,6 +67,16 @@ enum PropKind {
 
   /// Pole with a pennant.
   banner,
+
+  /// Wind-carved rock needle. What erosion leaves behind when there is
+  /// nothing growing to hold the ground together.
+  spire,
+
+  /// Tilted solar array on legs.
+  solarPanel,
+
+  /// Short post with a lamp on it, and a halo around the lamp.
+  beacon,
 }
 
 /// What grows - or rusts, or stands - on a given course.
@@ -211,6 +221,12 @@ class SceneryProp extends PositionComponent {
         _gravestone(canvas);
       case PropKind.banner:
         _banner(canvas);
+      case PropKind.spire:
+        _spire(canvas);
+      case PropKind.solarPanel:
+        _solarPanel(canvas);
+      case PropKind.beacon:
+        _beacon(canvas);
     }
 
     canvas.restore();
@@ -635,6 +651,92 @@ class SceneryProp extends PositionComponent {
         _light,
       );
   }
+
+  /// A needle of rock, wider at the foot, with a step partway up where a
+  /// harder layer resisted the wind.
+  void _spire(Canvas canvas) {
+    final w = extent * 0.30;
+    canvas
+      ..drawPath(
+        Path()
+          ..moveTo(-w, 0)
+          ..lineTo(-w * 0.52, -extent * 0.46)
+          ..lineTo(-w * 0.66, -extent * 0.52)
+          ..lineTo(-w * 0.20, -extent)
+          ..lineTo(w * 0.22, -extent * 0.94)
+          ..lineTo(w * 0.50, -extent * 0.50)
+          ..lineTo(w * 0.86, 0)
+          ..close(),
+        _stone,
+      )
+      // Sunward face, brighter, following the same taper.
+      ..drawPath(
+        Path()
+          ..moveTo(w * 0.06, -extent * 0.98)
+          ..lineTo(w * 0.50, -extent * 0.50)
+          ..lineTo(w * 0.80, -extent * 0.04)
+          ..lineTo(w * 0.30, -extent * 0.06)
+          ..lineTo(w * 0.10, -extent * 0.50)
+          ..close(),
+        Paint()..color = _shade(style.bodyLight).withOpacity(0.30),
+      );
+  }
+
+  /// Two legs and a panel tipped towards the sun, with cell divisions.
+  void _solarPanel(Canvas canvas) {
+    final w = extent * 1.5;
+    final legW = extent * 0.07;
+
+    for (final f in [-0.28, 0.28]) {
+      canvas.drawRect(
+        Rect.fromLTWH(w * f - legW / 2, -extent * 0.55, legW, extent * 0.55),
+        _stemPaint,
+      );
+    }
+
+    // The panel: a parallelogram, low edge forward.
+    final panel = Path()
+      ..moveTo(-w * 0.5, -extent * 0.52)
+      ..lineTo(w * 0.5, -extent * 0.98)
+      ..lineTo(w * 0.5, -extent * 0.86)
+      ..lineTo(-w * 0.5, -extent * 0.40)
+      ..close();
+    canvas.drawPath(panel, _dark);
+
+    final cell = Paint()
+      ..color = _shade(style.detail)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = extent * 0.02;
+    for (var i = 1; i < 4; i++) {
+      final t = i / 4;
+      canvas.drawLine(
+        Offset(-w * 0.5 + w * t, -extent * (0.52 - 0.46 * t)),
+        Offset(-w * 0.5 + w * t, -extent * (0.40 - 0.46 * t)),
+        cell,
+      );
+    }
+  }
+
+  /// A stubby post with a lit lamp, and a soft halo so it reads as a
+  /// source rather than a painted dot.
+  void _beacon(Canvas canvas) {
+    final postW = extent * 0.16;
+    canvas
+      ..drawRect(
+        Rect.fromLTWH(-postW / 2, -extent * 0.7, postW, extent * 0.7),
+        _stemPaint,
+      )
+      ..drawCircle(
+        Offset(0, -extent * 0.82),
+        extent * 0.34,
+        Paint()..color = _shade(style.detail).withOpacity(0.20),
+      )
+      ..drawCircle(Offset(0, -extent * 0.82), extent * 0.17, _detail)
+      ..drawRect(
+        Rect.fromLTWH(-postW * 0.9, -extent, postW * 1.8, extent * 0.06),
+        _dark,
+      );
+  }
 }
 
 // --- placement --------------------------------------------------------
@@ -667,6 +769,9 @@ double heightScaleFor(PropKind kind) => switch (kind) {
       PropKind.fence => 0.22,
       PropKind.tuft => 0.16,
       PropKind.rock => 0.20,
+      PropKind.spire => 1.05,
+      PropKind.solarPanel => 0.32,
+      PropKind.beacon => 0.30,
     };
 
 /// Living things lean; built things stand straighter, and a rock not at all.
@@ -679,11 +784,14 @@ double leanFor(PropKind kind, double roll) => switch (kind) {
       PropKind.tuft => (roll - 0.5) * 0.5,
       PropKind.gravestone => (roll - 0.5) * 0.28,
       PropKind.crate || PropKind.barrel => (roll - 0.5) * 0.10,
+      PropKind.spire => (roll - 0.5) * 0.10,
       PropKind.rock ||
       PropKind.pylon ||
       PropKind.floodlight ||
       PropKind.fence ||
-      PropKind.banner =>
+      PropKind.banner ||
+      PropKind.solarPanel ||
+      PropKind.beacon =>
         0.0,
     };
 
@@ -835,4 +943,71 @@ const SceneryStyle desertScenery = SceneryStyle(
     PropKind.tuft: 0.26,
   },
   spacing: 5.2,
+);
+
+/// Chryse: a surveyed basin. Somebody has been here - masts, arrays and
+/// supply cases left standing between the boulders.
+const SceneryStyle marsSurveyScenery = SceneryStyle(
+  bodyDark: Color(0xFF4C3A30),
+  bodyLight: Color(0xFF8A6A50),
+  stem: Color(0xFF9A9086),
+  detail: Color(0xFF63C8E0),
+  stone: Color(0xFF8A5636),
+  mix: {
+    PropKind.rock: 0.34,
+    PropKind.solarPanel: 0.20,
+    PropKind.pylon: 0.14,
+    PropKind.crate: 0.20,
+    PropKind.fence: 0.12,
+  },
+  spacing: 5.0,
+);
+
+/// Tharsis: nothing built, nothing living. Wind-carved needles and
+/// tattered route markers, which is all that survives out here.
+const SceneryStyle marsStormScenery = SceneryStyle(
+  bodyDark: Color(0xFF6B4A28),
+  bodyLight: Color(0xFFC79A5A),
+  stem: Color(0xFF7A6244),
+  detail: Color(0xFFD8B25E),
+  stone: Color(0xFF8C6238),
+  mix: {
+    PropKind.spire: 0.40,
+    PropKind.rock: 0.30,
+    PropKind.banner: 0.16,
+    PropKind.fence: 0.14,
+  },
+  spacing: 5.4,
+);
+
+/// Olympus at night: ice needles and the beacons that mark the route up.
+const SceneryStyle marsPolarScenery = SceneryStyle(
+  bodyDark: Color(0xFF3A2E48),
+  bodyLight: Color(0xFF8E7CB0),
+  stem: Color(0xFF5A4E70),
+  detail: Color(0xFFFFB24B),
+  stone: Color(0xFF5C4E70),
+  mix: {
+    PropKind.spire: 0.34,
+    PropKind.beacon: 0.26,
+    PropKind.rock: 0.28,
+    PropKind.pylon: 0.12,
+  },
+  spacing: 5.6,
+);
+
+/// A tropical shore: palms leaning off the dune, sea grape and dune grass.
+const SceneryStyle beachScenery = SceneryStyle(
+  bodyDark: Color(0xFF2E7A4E),
+  bodyLight: Color(0xFF57B472),
+  stem: Color(0xFF8A6742),
+  detail: Color(0xFFCFD98A),
+  stone: Color(0xFFB9A386),
+  mix: {
+    PropKind.palm: 0.34,
+    PropKind.bush: 0.22,
+    PropKind.tuft: 0.32,
+    PropKind.rock: 0.12,
+  },
+  spacing: 4.4,
 );

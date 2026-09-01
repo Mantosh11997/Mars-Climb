@@ -269,6 +269,23 @@ const Level level10 = Level(
   oxygenThrottleDrain: 4.0,
 );
 
+const Level level11 = Level(
+  number: 11,
+  name: 'Sunset Cay',
+  subtitle: 'Soft sand and leaning palms. The dunes give under you on the '
+      'way up, which is a different problem from anything before it.',
+  length: 1600,
+  seed: 2260814,
+  amplitude: 4.05,
+  wavelength: 23.0,
+  macroScale: 3.0,
+  macroWavelengthFactor: 8.0,
+  slopeBudget: 0.80,
+  theme: sunsetCay,
+  cellSpacing: 18.0,
+  oxygenIdleDrain: 1.8,
+);
+
 /// Every level, in play order.
 const List<Level> levels = [
   level1,
@@ -281,6 +298,7 @@ const List<Level> levels = [
   level8,
   level9,
   level10,
+  level11,
 ];
 
 /// The next course after [level], or null if it is the last one.
