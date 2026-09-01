@@ -180,8 +180,108 @@ const Level level5 = Level(
   oxygenIdleDrain: 1.7,
 );
 
+const Level level6 = Level(
+  number: 6,
+  name: 'Frostpine Ridge',
+  subtitle: 'Snowfields above the treeline. Grip is the problem, not the '
+      'gradient - the crust lets go the moment you ask too much of it.',
+  length: 1100,
+  seed: 8814402,
+  amplitude: 6.20,
+  wavelength: 24.0,
+  macroScale: 3.4,
+  macroWavelengthFactor: 9.0,
+  slopeBudget: 0.86,
+  theme: alpineSnow,
+  cellSpacing: 19.0,
+  oxygenIdleDrain: 1.9,
+);
+
+const Level level7 = Level(
+  number: 7,
+  name: 'Rustworks Yard',
+  subtitle: 'A refinery built on spoil heaps. Short, mean pitches between '
+      'the towers, and drums everywhere the ground levels out.',
+  length: 1200,
+  seed: 6027715,
+  amplitude: 4.25,
+  wavelength: 15.0,
+  macroScale: 3.4,
+  macroWavelengthFactor: 7.0,
+  slopeBudget: 0.90,
+  theme: refineryYard,
+  cellSpacing: 16.0,
+  oxygenIdleDrain: 2.1,
+  oxygenThrottleDrain: 3.6,
+);
+
+const Level level8 = Level(
+  number: 8,
+  name: 'Hollow Moor',
+  subtitle: 'Dead ground under a full moon. Long blind crests where you '
+      'cannot see the landing until you are already committed to it.',
+  length: 1300,
+  seed: 1031977,
+  amplitude: 4.30,
+  wavelength: 34.0,
+  macroScale: 3.2,
+  macroWavelengthFactor: 9.5,
+  slopeBudget: 0.84,
+  theme: moonlitMoor,
+  cellSpacing: 20.0,
+  oxygenIdleDrain: 1.9,
+  oxygenThrottleDrain: 3.5,
+);
+
+const Level level9 = Level(
+  number: 9,
+  name: 'Floodlit Coliseum',
+  subtitle: 'A built course, and it shows: every ramp is deliberate and '
+      'every one of them is aimed at putting you on your roof.',
+  length: 1400,
+  seed: 5590231,
+  amplitude: 4.20,
+  wavelength: 13.5,
+  macroScale: 2.8,
+  macroWavelengthFactor: 6.5,
+  slopeBudget: 0.93,
+  theme: floodlitArena,
+  cellSpacing: 15.0,
+  oxygenIdleDrain: 2.0,
+  oxygenThrottleDrain: 3.8,
+);
+
+const Level level10 = Level(
+  number: 10,
+  name: 'Sunbaked Mesa',
+  subtitle: 'The last one. Canyon walls of baked sandstone, no shade, and '
+      'a climb that does not let up until the line.',
+  length: 1500,
+  seed: 7770419,
+  amplitude: 3.60,
+  wavelength: 21.0,
+  macroScale: 4.0,
+  macroWavelengthFactor: 8.0,
+  slopeBudget: 0.94,
+  theme: sunbakedMesa,
+  cellSpacing: 17.0,
+  oxygenIdleDrain: 2.2,
+  oxygenThrottleDrain: 4.0,
+);
+
 /// Every level, in play order.
-const List<Level> levels = [level1, level2, level3, level4, level5];
+const List<Level> levels = [
+  level1,
+  level2,
+  level3,
+  level4,
+  level5,
+  level6,
+  level7,
+  level8,
+  level9,
+  level10,
+];
 
 /// The next course after [level], or null if it is the last one.
 Level? levelAfter(Level level) {

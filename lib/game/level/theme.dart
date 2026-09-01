@@ -154,9 +154,9 @@ const LevelTheme frostDawn = LevelTheme(
 /// A temperate valley - somewhere that is not Mars at all. Grass, pines
 /// and a high pale sky.
 ///
-/// The palette still obeys the atmospheric-perspective rule: the hill
+/// Every theme below still obeys the atmospheric-perspective rule: the
 /// bands step lighter as they recede, and every one of them is lighter
-/// than [groundFill], so the distance reads as distance.
+/// than [groundFill], so distance reads as distance.
 const LevelTheme meadowVale = LevelTheme(
   name: 'Meadow',
   skyTop: Color(0xFFBFDCE8),
@@ -173,4 +173,104 @@ const LevelTheme meadowVale = LevelTheme(
   starOpacity: 0.0,
   hazeOpacity: 0.18,
   scenery: meadowScenery,
+);
+
+/// High alpine, mid-afternoon. Cold blue light, snowfields, and enough
+/// haze on the peaks that the far ridges almost vanish.
+const LevelTheme alpineSnow = LevelTheme(
+  name: 'Snowfield',
+  skyTop: Color(0xFF5E7FC4),
+  skyMid: Color(0xFF9DB6E2),
+  skyLow: Color(0xFFCFDDF2),
+  skyHorizon: Color(0xFFEFF4FC),
+  mountainFar: Color(0xFFE4ECF7),
+  mountainMid: Color(0xFFC7D6EA),
+  mountainNear: Color(0xFFA8BCD8),
+  groundFill: Color(0xFFF2F7FD),
+  groundFillDeep: Color(0xFF8FA6C4),
+  groundCrust: Color(0xFFFFFFFF),
+  sun: Color(0xFFFFFFFF),
+  starOpacity: 0.0,
+  hazeOpacity: 0.36,
+  scenery: snowScenery,
+);
+
+/// A refinery yard under a smog ceiling. Sodium light on the underside of
+/// the murk, oil-stained ground, nothing growing.
+const LevelTheme refineryYard = LevelTheme(
+  name: 'Refinery',
+  skyTop: Color(0xFF3F4432),
+  skyMid: Color(0xFF7C7A50),
+  skyLow: Color(0xFFBCAC66),
+  skyHorizon: Color(0xFFDCC87C),
+  mountainFar: Color(0xFFC0B487),
+  mountainMid: Color(0xFF9A9068),
+  mountainNear: Color(0xFF746E50),
+  groundFill: Color(0xFF44402F),
+  groundFillDeep: Color(0xFF1C1A13),
+  groundCrust: Color(0xFFB29A4A),
+  sun: Color(0xFFE8D48A),
+  starOpacity: 0.0,
+  hazeOpacity: 0.55,
+  scenery: industrialScenery,
+);
+
+/// Moorland under a full moon. Almost monochrome, with a cold green cast
+/// on everything the moon touches.
+const LevelTheme moonlitMoor = LevelTheme(
+  name: 'Moonlit moor',
+  skyTop: Color(0xFF0B1024),
+  skyMid: Color(0xFF16213F),
+  skyLow: Color(0xFF2C3A5C),
+  skyHorizon: Color(0xFF4E6B7A),
+  mountainFar: Color(0xFF4C6472),
+  mountainMid: Color(0xFF3A4E5C),
+  mountainNear: Color(0xFF2B3A46),
+  groundFill: Color(0xFF1E2E32),
+  groundFillDeep: Color(0xFF0A1216),
+  groundCrust: Color(0xFF5FA894),
+  sun: Color(0xFFF2F8FF),
+  starOpacity: 1.0,
+  hazeOpacity: 0.26,
+  scenery: hauntedScenery,
+);
+
+/// A floodlit stadium at night: banked stands going back into the dark,
+/// and a clay track that reads hot under the lights.
+const LevelTheme floodlitArena = LevelTheme(
+  name: 'Arena',
+  skyTop: Color(0xFF10131E),
+  skyMid: Color(0xFF1B2133),
+  skyLow: Color(0xFF2E3550),
+  skyHorizon: Color(0xFF4A5570),
+  mountainFar: Color(0xFF6B7690),
+  mountainMid: Color(0xFF515B74),
+  mountainNear: Color(0xFF3B4459),
+  groundFill: Color(0xFF8C2A2A),
+  groundFillDeep: Color(0xFF3A0F0F),
+  groundCrust: Color(0xFFE8B36A),
+  sun: Color(0xFFFFFFFF),
+  starOpacity: 0.25,
+  hazeOpacity: 0.20,
+  scenery: arenaScenery,
+);
+
+/// Late-afternoon desert. Sandstone mesas stepping back into the heat
+/// haze, ochre sand, hard light.
+const LevelTheme sunbakedMesa = LevelTheme(
+  name: 'Mesa',
+  skyTop: Color(0xFF7FB6D9),
+  skyMid: Color(0xFFBBD5E2),
+  skyLow: Color(0xFFF0DCB4),
+  skyHorizon: Color(0xFFFAE9C4),
+  mountainFar: Color(0xFFE7C79C),
+  mountainMid: Color(0xFFD2A473),
+  mountainNear: Color(0xFFB87F52),
+  groundFill: Color(0xFFB5794A),
+  groundFillDeep: Color(0xFF5E3520),
+  groundCrust: Color(0xFFEFC078),
+  sun: Color(0xFFFFF6D8),
+  starOpacity: 0.0,
+  hazeOpacity: 0.40,
+  scenery: desertScenery,
 );
