@@ -9,6 +9,7 @@ class LevelProfile extends StatelessWidget {
   const LevelProfile({super.key, required this.level, this.height});
 
   final Level level;
+
   /// Fixed height, or null to fill the space the parent gives it (put it
   /// in an Expanded).
   final double? height;
@@ -60,8 +61,7 @@ class _ProfilePainter extends CustomPainter {
     );
 
     // Crust line along the top edge of the silhouette.
-    final crust = Path()
-      ..moveTo(0, topPad + profile.first * usable);
+    final crust = Path()..moveTo(0, topPad + profile.first * usable);
     for (var i = 1; i < profile.length; i++) {
       crust.lineTo(
         size.width * i / (profile.length - 1),

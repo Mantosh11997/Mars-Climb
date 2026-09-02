@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'game/config.dart';
+import 'game/progress/profile_store.dart';
+import 'game/vehicle/vehicle.dart';
 import 'ui/machine_select_screen.dart';
+import 'ui/palette.dart';
+import 'ui/progress_scope.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,25 +18,32 @@ Future<void> main() async {
   ]);
   await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
-  runApp(const MarsClimbApp());
+  // Read the save before the first frame. The garage cannot be drawn
+  // honestly without it - every card needs to know whether it is owned.
+  final store = ProfileStore(starterVehicleId: rover.id);
+  await store.load();
+
+  runApp(MarsClimbApp(store: store));
 }
 
 class MarsClimbApp extends StatelessWidget {
-  const MarsClimbApp({super.key});
+  const MarsClimbApp({super.key, required this.store});
+
+  final ProfileStore store;
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Mars Climb',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData.dark(useMaterial3: true).copyWith(
-        scaffoldBackgroundColor: const Color(0xFF160B08),
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: GameConfig.accent,
-          brightness: Brightness.dark,
-        ),
+      theme: ThemeData.light(useMaterial3: true).copyWith(
+        scaffoldBackgroundColor: Palette.pageGradient.first,
+        colorScheme: ColorScheme.fromSeed(seedColor: GameConfig.accent),
       ),
-      home: const MachineSelectScreen(),
+      home: ProgressScope(
+        store: store,
+        child: const MachineSelectScreen(),
+      ),
     );
   }
 }

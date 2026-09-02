@@ -3,7 +3,10 @@ import 'package:flutter/material.dart';
 import '../build_info.dart';
 
 import '../game/vehicle/vehicle.dart';
+import 'coin_badge.dart';
 import 'palette.dart';
+import 'progress_scope.dart';
+import 'upgrade_sheet.dart';
 import 'course_select_screen.dart';
 import 'vehicle_preview.dart';
 import 'vehicle_stats.dart';
@@ -52,6 +55,7 @@ class _MachineSelectScreenState extends State<MachineSelectScreen> {
                 // Only on the first screen: enough to tell one APK from
                 // another, small enough to ignore while playing.
                 trailing: 'BUILD $buildId',
+                showWallet: true,
               ),
               Expanded(
                 child: PageView.builder(
@@ -60,6 +64,8 @@ class _MachineSelectScreenState extends State<MachineSelectScreen> {
                   onPageChanged: (i) => setState(() => _index = i),
                   itemBuilder: (_, i) => _MachineCard(
                     vehicle: vehicles[i],
+                    owned:
+                        ProgressScope.of(context).profile.owns(vehicles[i].id),
                     selected: i == _index,
                     onTap: () => _ctrl.animateToPage(
                       i,
@@ -87,39 +93,7 @@ class _MachineSelectScreenState extends State<MachineSelectScreen> {
               const SizedBox(height: 10),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 26),
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: FilledButton(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: Palette.accent,
-                      foregroundColor: Palette.onAccent,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => CourseSelectScreen(vehicle: _vehicle),
-                      ),
-                    ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'CHOOSE COURSE',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 3,
-                          ),
-                        ),
-                        SizedBox(width: 8),
-                        Icon(Icons.arrow_forward_rounded, size: 22),
-                      ],
-                    ),
-                  ),
-                ),
+                child: _ActionRow(vehicle: _vehicle),
               ),
               const SizedBox(height: 12),
             ],
@@ -130,12 +104,142 @@ class _MachineSelectScreenState extends State<MachineSelectScreen> {
   }
 }
 
+/// What you can do with the machine in front of you.
+///
+/// One row that changes shape with ownership: an unowned machine offers
+/// only its price, an owned one offers the workshop and the way forward.
+/// Two different screens for that would be one screen too many.
+class _ActionRow extends StatelessWidget {
+  const _ActionRow({required this.vehicle});
+
+  final Vehicle vehicle;
+
+  @override
+  Widget build(BuildContext context) {
+    final store = ProgressScope.of(context);
+    final owned = store.profile.owns(vehicle.id);
+    final affordable = store.profile.coins >= vehicle.price;
+
+    if (!owned) {
+      return SizedBox(
+        width: double.infinity,
+        height: 48,
+        child: FilledButton(
+          style: FilledButton.styleFrom(
+            backgroundColor: affordable ? Palette.accent : Palette.track,
+            foregroundColor: affordable ? Palette.onAccent : Palette.inkFaint,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
+          onPressed: affordable
+              ? () => ProgressScope.read(context)
+                  .buyVehicle(vehicle.id, vehicle.price)
+              : null,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.lock_open_rounded, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                affordable
+                    ? 'UNLOCK  ·  ${vehicle.price}'
+                    : 'NEEDS ${vehicle.price - store.profile.coins} MORE',
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 2,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Row(
+      children: [
+        SizedBox(
+          height: 48,
+          width: 116,
+          child: OutlinedButton(
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Palette.ink,
+              side: const BorderSide(color: Palette.line),
+              // Zero, because OutlinedButton's default horizontal padding
+              // plus the icon and label is wider than the button.
+              padding: EdgeInsets.zero,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            onPressed: () => UpgradeSheet.show(context, vehicle),
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.build_rounded, size: 17),
+                SizedBox(width: 6),
+                Text(
+                  'TUNE',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.6,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: SizedBox(
+            height: 48,
+            child: FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: Palette.accent,
+                foregroundColor: Palette.onAccent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => CourseSelectScreen(vehicle: vehicle),
+                ),
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'CHOOSE COURSE',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 3,
+                    ),
+                  ),
+                  SizedBox(width: 8),
+                  Icon(Icons.arrow_forward_rounded, size: 22),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _MachineCard extends StatelessWidget {
   const _MachineCard({
     required this.vehicle,
+    required this.owned,
     required this.selected,
     required this.onTap,
   });
+
+  final bool owned;
 
   final Vehicle vehicle;
   final bool selected;
@@ -168,19 +272,39 @@ class _MachineCard extends StatelessWidget {
             ),
             child: Column(
               children: [
-                // The machine as it actually drives: wheels fitted.
-                Expanded(flex: 5, child: VehiclePreview(vehicle: vehicle)),
-                const SizedBox(height: 8),
-                Text(
-                  vehicle.name.toUpperCase(),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Palette.ink,
-                    fontSize: 19,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 2.5,
+                // The machine as it actually drives: wheels fitted. An
+                // unowned one is greyed rather than hidden - you should be
+                // able to see exactly what you are saving up for.
+                Expanded(
+                  flex: 5,
+                  child: Opacity(
+                    opacity: owned ? 1.0 : 0.42,
+                    child: VehiclePreview(vehicle: vehicle),
                   ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (!owned) ...[
+                      const Icon(Icons.lock_rounded,
+                          size: 15, color: Palette.inkFaint),
+                      const SizedBox(width: 5),
+                    ],
+                    Flexible(
+                      child: Text(
+                        vehicle.name.toUpperCase(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: owned ? Palette.ink : Palette.inkMuted,
+                          fontSize: 19,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 2.5,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 8),
                 Flexible(
@@ -268,6 +392,7 @@ class _Header extends StatelessWidget {
     required this.subtitle,
     this.onBack,
     this.trailing,
+    this.showWallet = false,
   });
 
   final String title;
@@ -276,6 +401,9 @@ class _Header extends StatelessWidget {
 
   /// Optional quiet note pinned to the far end of the bar.
   final String? trailing;
+
+  /// Whether to show the coin balance. On wherever you can spend.
+  final bool showWallet;
 
   @override
   Widget build(BuildContext context) {
@@ -289,33 +417,47 @@ class _Header extends StatelessWidget {
               icon: const Icon(Icons.arrow_back_rounded),
               color: Palette.inkMuted,
             ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  color: Palette.ink,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 4,
+          // Flexible, because the bar now carries a wallet and a build
+          // label as well as the title, and a long machine name in the
+          // subtitle was enough to overflow it.
+          Flexible(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Palette.ink,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 4,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                subtitle,
-                style: const TextStyle(
-                  color: Palette.accent,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 2.4,
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Palette.accent,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 2.4,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
+          const SizedBox(width: 12),
+          const Spacer(),
+          if (showWallet) ...[
+            const CoinBadge(),
+            const SizedBox(width: 10),
+          ],
           if (trailing != null) ...[
-            const Spacer(),
             Text(
               trailing!,
               style: const TextStyle(
@@ -367,12 +509,14 @@ class GarageHeader extends StatelessWidget {
     required this.subtitle,
     this.onBack,
     this.trailing,
+    this.showWallet = false,
   });
 
   final String title;
   final String subtitle;
   final VoidCallback? onBack;
   final String? trailing;
+  final bool showWallet;
 
   @override
   Widget build(BuildContext context) => _Header(
@@ -380,6 +524,7 @@ class GarageHeader extends StatelessWidget {
         subtitle: subtitle,
         onBack: onBack,
         trailing: trailing,
+        showWallet: showWallet,
       );
 }
 

@@ -26,14 +26,24 @@ class Overlays {
 }
 
 class MarsClimbGame extends Forge2DGame {
-  MarsClimbGame({this.level = level1, v.Vehicle? vehicle})
-      : vehicle = vehicle ?? v.rover,
+  MarsClimbGame({
+    this.level = level1,
+    v.Vehicle? vehicle,
+    this.fuelMultiplier = 1.0,
+  })  : vehicle = vehicle ?? v.rover,
         super(gravity: Vector2(0, GameConfig.gravity));
 
   Level level;
   v.Vehicle vehicle;
 
-  late final GameState state = GameState(level);
+  /// Capacity multiplier from the machine's fitted tank. Comes in from the
+  /// screen so the game never has to reach into saved progress.
+  final double fuelMultiplier;
+
+  late final GameState state = GameState(
+    level,
+    maxOxygen: GameConfig.oxygenMax * fuelMultiplier,
+  );
 
   late TerrainGenerator generator;
   late TerrainManager terrain;
@@ -218,8 +228,7 @@ class MarsClimbGame extends Forge2DGame {
     // Oxygen burn. Head impact is reported by the head body itself.
     final throttling = rover.throttle != Throttle.none;
     state.drain(
-      (level.oxygenIdleDrain +
-              (throttling ? level.oxygenThrottleDrain : 0.0)) *
+      (level.oxygenIdleDrain + (throttling ? level.oxygenThrottleDrain : 0.0)) *
           dt,
     );
     if (state.status == RunStatus.outOfOxygen) {

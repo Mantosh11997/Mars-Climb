@@ -31,10 +31,8 @@ class VehicleBars {
   }
 
   static VehicleBars of(Vehicle v) {
-    double lo(double Function(Vehicle) f) =>
-        vehicles.map(f).reduce(math.min);
-    double hi(double Function(Vehicle) f) =>
-        vehicles.map(f).reduce(math.max);
+    double lo(double Function(Vehicle) f) => vehicles.map(f).reduce(math.min);
+    double hi(double Function(Vehicle) f) => vehicles.map(f).reduce(math.max);
 
     return VehicleBars(
       speed: _norm(v.topSpeed, lo((x) => x.topSpeed), hi((x) => x.topSpeed)),

@@ -1,6 +1,7 @@
 import 'package:flame/components.dart';
 
 import '../config.dart';
+import '../progress/upgrades.dart';
 
 /// Where one wheel sits on a machine, and how it behaves.
 ///
@@ -58,6 +59,7 @@ class Vehicle {
     required this.headDensity,
     required this.chassisPitchTorque,
     Vector2? spriteOffset,
+    this.price = 0,
     this.driverAsset = 'character.png',
     this.driverBehind = false,
     this.driverScale = 1.0,
@@ -94,6 +96,10 @@ class Vehicle {
   final List<WheelMount> wheels;
 
   // --- driver ---------------------------------------------------------
+
+  /// What it costs to unlock, in coins. Zero means it is the starter and
+  /// is owned from the first launch.
+  final int price;
 
   /// Which driver art this machine carries.
   ///
@@ -175,9 +181,8 @@ class Vehicle {
 
   /// Deepest point any wheel reaches below the chassis centre - what the
   /// spawn height has to clear.
-  double get lowestWheelExtent => wheels
-      .map((w) => w.anchor.y + w.radius)
-      .reduce((a, b) => a > b ? a : b);
+  double get lowestWheelExtent =>
+      wheels.map((w) => w.anchor.y + w.radius).reduce((a, b) => a > b ? a : b);
 
   /// Representative radius for the speed readout.
   double get driveRadius {
@@ -194,6 +199,62 @@ class Vehicle {
   double get topSpeed => engineMaxMotorSpeed * driveRadius;
 
   double get topSpeedKmh => topSpeed * 3.6;
+
+  /// This machine with its bought parts fitted.
+  ///
+  /// Upgrades are applied here rather than read out of a profile deep in
+  /// the physics, so everything downstream - Rover, the stat bars, the
+  /// clearable-course test - sees one Vehicle and cannot disagree about
+  /// what it can do.
+  ///
+  /// Every part is a multiplier on what the machine already had, so the
+  /// spread between machines survives being built: a fully-upgraded
+  /// Skimmer is still a Skimmer, not a slower Ox.
+  Vehicle tuned(Upgrades u) {
+    if (u.total == 0) return this;
+    return Vehicle(
+      id: id,
+      name: name,
+      tagline: tagline,
+      bodyAsset: bodyAsset,
+      wheelAsset: wheelAsset,
+      spriteSize: spriteSize,
+      spriteOffset: spriteOffset,
+      chassisSize: chassisSize,
+      wheels: wheels,
+      price: price,
+      driverAsset: driverAsset,
+      driverBehind: driverBehind,
+      driverScale: driverScale,
+      driverOffset: driverOffset,
+      headOffset: headOffset,
+      headRadius: headRadius,
+      headDensity: headDensity,
+      chassisDensity: chassisDensity,
+      wheelDensity: wheelDensity,
+      wheelAngularDamping: wheelAngularDamping,
+      powerCurveExponent: powerCurveExponent,
+      dragCoefficient: dragCoefficient,
+      chassisPitchTorque: chassisPitchTorque,
+      // Engine: mostly pull, with a smaller lift to the rev ceiling. Making
+      // top speed climb as fast as torque would turn every machine into the
+      // same fast one by level 5.
+      engineMaxTorque: engineMaxTorque * (1 + 0.18 * u.engine),
+      engineMaxMotorSpeed: engineMaxMotorSpeed * (1 + 0.06 * u.engine),
+      // Grip is the biggest single thing between you and a steep face, so
+      // it gets the most obvious return.
+      wheelFriction: wheelFriction * (1 + 0.13 * u.grip),
+      // Softer springs, better damped: takes a landing instead of pinging
+      // the machine into the air.
+      suspensionFrequencyHz: suspensionFrequencyHz * (1 - 0.045 * u.suspension),
+      suspensionDampingRatio:
+          (suspensionDampingRatio * (1 + 0.06 * u.suspension)).clamp(0.0, 1.0),
+    );
+  }
+
+  /// Fuel capacity multiplier from the tank part. Not a Vehicle field: the
+  /// cell belongs to the run, not to the machine.
+  static double tankMultiplier(Upgrades u) => 1 + 0.16 * u.tank;
 }
 
 /// Where the fists sit on each driver sprite, as a fraction of its canvas.
@@ -228,6 +289,7 @@ final Vehicle rover = Vehicle(
   spriteSize: Vector2(4.6, 3.07),
   spriteOffset: Vector2(0, -0.15),
   chassisSize: Vector2(3.4, 1.05),
+  price: 0,
   wheels: [
     WheelMount(anchor: Vector2(-1.05, 0.69), radius: 0.58),
     WheelMount(anchor: Vector2(1.46, 0.69), radius: 0.58),
@@ -257,6 +319,7 @@ final Vehicle scout = Vehicle(
   wheelAsset: 'scout_wheel.png',
   spriteSize: Vector2(4.3, 2.87),
   chassisSize: Vector2(3.0, 0.85),
+  price: 900,
   wheels: [
     WheelMount(anchor: Vector2(-1.31, 0.63), radius: 0.49),
     WheelMount(anchor: Vector2(1.33, 0.63), radius: 0.49),
@@ -288,6 +351,7 @@ final Vehicle hauler = Vehicle(
   wheelAsset: 'hauler_wheel.png',
   spriteSize: Vector2(5.4, 3.6),
   chassisSize: Vector2(4.0, 1.35),
+  price: 1400,
   wheels: [
     WheelMount(anchor: Vector2(-1.57, 0.65), radius: 0.745, spriteScale: 1.087),
     WheelMount(anchor: Vector2(1.35, 0.65), radius: 0.745, spriteScale: 1.087),
@@ -318,6 +382,7 @@ final Vehicle jumper = Vehicle(
   wheelAsset: 'jumper_wheel.png',
   spriteSize: Vector2(5.0, 3.33),
   chassisSize: Vector2(3.5, 1.0),
+  price: 1800,
   wheels: [
     WheelMount(anchor: Vector2(-1.67, 0.76), radius: 0.598),
     WheelMount(anchor: Vector2(1.73, 0.76), radius: 0.598),
@@ -348,6 +413,7 @@ final Vehicle crawler = Vehicle(
   wheelAsset: 'crawler_wheel.png',
   spriteSize: Vector2(5.6, 3.73),
   chassisSize: Vector2(4.2, 1.0),
+  price: 2300,
   wheels: [
     WheelMount(anchor: Vector2(-2.02, 0.65), radius: 0.592),
     WheelMount(anchor: Vector2(2.14, 0.65), radius: 0.592),
@@ -368,8 +434,6 @@ final Vehicle crawler = Vehicle(
   dragCoefficient: 1.7,
 );
 
-
-
 /// -------------------------------------------------------------------
 /// TWO-WHEELERS
 ///
@@ -385,6 +449,7 @@ final Vehicle dustdevil = Vehicle(
   wheelAsset: 'dustdevil_wheel.png',
   spriteSize: Vector2(3.2, 2.13),
   chassisSize: Vector2(2.2, 0.55),
+  price: 1200,
   wheels: [
     WheelMount(anchor: Vector2(-1.09, 0.62), radius: 0.44, spriteScale: 1.09),
     WheelMount(anchor: Vector2(1.06, 0.62), radius: 0.44, spriteScale: 1.09),
@@ -415,6 +480,7 @@ final Vehicle piston = Vehicle(
   wheelAsset: 'piston_wheel.png',
   spriteSize: Vector2(3.2, 2.13),
   chassisSize: Vector2(2.2, 0.55),
+  price: 2000,
   wheels: [
     WheelMount(anchor: Vector2(-1.44, 0.48), radius: 0.44, spriteScale: 1.09),
     WheelMount(anchor: Vector2(1.38, 0.48), radius: 0.44, spriteScale: 1.09),
@@ -445,6 +511,7 @@ final Vehicle gecko = Vehicle(
   wheelAsset: 'gecko_wheel.png',
   spriteSize: Vector2(3.2, 2.13),
   chassisSize: Vector2(2.2, 0.55),
+  price: 1600,
   wheels: [
     WheelMount(anchor: Vector2(-1.15, 0.59), radius: 0.44, spriteScale: 1.09),
     WheelMount(anchor: Vector2(1.06, 0.59), radius: 0.44, spriteScale: 1.09),
@@ -475,6 +542,7 @@ final Vehicle ionwing = Vehicle(
   wheelAsset: 'ionwing_wheel.png',
   spriteSize: Vector2(3.2, 2.13),
   chassisSize: Vector2(2.2, 0.55),
+  price: 2600,
   wheels: [
     WheelMount(anchor: Vector2(-1.12, 0.50), radius: 0.44, spriteScale: 1.09),
     WheelMount(anchor: Vector2(1.06, 0.50), radius: 0.44, spriteScale: 1.09),
@@ -505,6 +573,7 @@ final Vehicle scarab = Vehicle(
   wheelAsset: 'scarab_wheel.png',
   spriteSize: Vector2(3.2, 2.13),
   chassisSize: Vector2(2.2, 0.55),
+  price: 2200,
   wheels: [
     WheelMount(anchor: Vector2(-1.39, 0.53), radius: 0.44, spriteScale: 1.09),
     WheelMount(anchor: Vector2(1.12, 0.53), radius: 0.44, spriteScale: 1.09),
@@ -535,6 +604,7 @@ final Vehicle needle = Vehicle(
   wheelAsset: 'needle_wheel.png',
   spriteSize: Vector2(3.2, 2.13),
   chassisSize: Vector2(2.2, 0.55),
+  price: 3200,
   wheels: [
     WheelMount(anchor: Vector2(-1.44, 0.42), radius: 0.44, spriteScale: 1.09),
     WheelMount(anchor: Vector2(1.12, 0.42), radius: 0.44, spriteScale: 1.09),
@@ -565,6 +635,7 @@ final Vehicle ratchet = Vehicle(
   wheelAsset: 'ratchet_wheel.png',
   spriteSize: Vector2(3.2, 2.13),
   chassisSize: Vector2(2.2, 0.55),
+  price: 2800,
   wheels: [
     WheelMount(anchor: Vector2(-1.44, 0.53), radius: 0.44, spriteScale: 1.09),
     WheelMount(anchor: Vector2(1.12, 0.53), radius: 0.44, spriteScale: 1.09),
@@ -587,7 +658,6 @@ final Vehicle ratchet = Vehicle(
   dragCoefficient: 0.68,
 );
 
-
 /// -------------------------------------------------------------------
 /// TRIKES
 ///
@@ -604,6 +674,7 @@ final Vehicle trilobite = Vehicle(
   wheelAsset: 'trilobite_wheel.png',
   spriteSize: Vector2(4.4, 2.93),
   chassisSize: Vector2(3.2, 0.8),
+  price: 3600,
   wheels: [
     WheelMount(anchor: Vector2(-1.98, 0.50), radius: 0.49, spriteScale: 1.09),
     WheelMount(anchor: Vector2(0.79, 0.50), radius: 0.49, spriteScale: 1.09),
@@ -634,6 +705,7 @@ final Vehicle wasp = Vehicle(
   wheelAsset: 'wasp_wheel.png',
   spriteSize: Vector2(4.4, 2.93),
   chassisSize: Vector2(3.2, 0.8),
+  price: 4200,
   wheels: [
     WheelMount(anchor: Vector2(-1.72, 0.45), radius: 0.49, spriteScale: 1.09),
     WheelMount(anchor: Vector2(1.36, 0.45), radius: 0.49, spriteScale: 1.09),
@@ -664,6 +736,7 @@ final Vehicle kite = Vehicle(
   wheelAsset: 'kite_wheel.png',
   spriteSize: Vector2(4.4, 2.93),
   chassisSize: Vector2(3.2, 0.8),
+  price: 4800,
   wheels: [
     WheelMount(anchor: Vector2(-1.94, 0.35), radius: 0.49, spriteScale: 1.09),
     WheelMount(anchor: Vector2(1.54, 0.35), radius: 0.49, spriteScale: 1.09),
@@ -694,6 +767,7 @@ final Vehicle haulertrike = Vehicle(
   wheelAsset: 'haulertrike_wheel.png',
   spriteSize: Vector2(4.4, 2.93),
   chassisSize: Vector2(3.2, 0.8),
+  price: 3900,
   wheels: [
     WheelMount(anchor: Vector2(-1.76, 0.45), radius: 0.49, spriteScale: 1.09),
     WheelMount(anchor: Vector2(1.58, 0.45), radius: 0.49, spriteScale: 1.09),
@@ -724,6 +798,7 @@ final Vehicle compass = Vehicle(
   wheelAsset: 'compass_wheel.png',
   spriteSize: Vector2(4.4, 2.93),
   chassisSize: Vector2(3.2, 0.8),
+  price: 5200,
   wheels: [
     WheelMount(anchor: Vector2(-1.76, 0.42), radius: 0.49, spriteScale: 1.09),
     WheelMount(anchor: Vector2(1.06, 0.42), radius: 0.49, spriteScale: 1.09),
@@ -754,6 +829,7 @@ final Vehicle cinder = Vehicle(
   wheelAsset: 'cinder_wheel.png',
   spriteSize: Vector2(4.4, 2.93),
   chassisSize: Vector2(3.2, 0.8),
+  price: 5800,
   wheels: [
     WheelMount(anchor: Vector2(-1.89, 0.44), radius: 0.49, spriteScale: 1.09),
     WheelMount(anchor: Vector2(1.14, 0.44), radius: 0.49, spriteScale: 1.09),
@@ -784,6 +860,7 @@ final Vehicle stilt = Vehicle(
   wheelAsset: 'stilt_wheel.png',
   spriteSize: Vector2(4.4, 2.93),
   chassisSize: Vector2(3.2, 0.8),
+  price: 6500,
   wheels: [
     WheelMount(anchor: Vector2(-1.98, 0.64), radius: 0.49, spriteScale: 1.09),
     WheelMount(anchor: Vector2(1.32, 0.64), radius: 0.49, spriteScale: 1.09),
@@ -806,11 +883,26 @@ final Vehicle stilt = Vehicle(
   dragCoefficient: 0.95,
 );
 
-
 /// Every vehicle, in garage order: the original rovers, then the bikes,
 /// then the trikes.
 final List<Vehicle> vehicles = [
-  rover, scout, hauler, jumper, crawler,
-  dustdevil, piston, gecko, ionwing, scarab, needle, ratchet,
-  trilobite, wasp, kite, haulertrike, compass, cinder, stilt,
+  rover,
+  scout,
+  hauler,
+  jumper,
+  crawler,
+  dustdevil,
+  piston,
+  gecko,
+  ionwing,
+  scarab,
+  needle,
+  ratchet,
+  trilobite,
+  wasp,
+  kite,
+  haulertrike,
+  compass,
+  cinder,
+  stilt,
 ];

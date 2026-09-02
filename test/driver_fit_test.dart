@@ -53,7 +53,8 @@ Future<_Mask> _load(String asset) async {
   final data = await rootBundle.load('assets/images/$asset');
   final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
   final frame = await codec.getNextFrame();
-  final bytes = await frame.image.toByteData(format: ui.ImageByteFormat.rawRgba);
+  final bytes =
+      await frame.image.toByteData(format: ui.ImageByteFormat.rawRgba);
   final rgba = bytes!.buffer.asUint8List();
   final w = frame.image.width;
   final h = frame.image.height;
@@ -66,8 +67,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   final cache = <String, _Mask>{};
-  Future<_Mask> mask(String asset) async =>
-      cache[asset] ??= await _load(asset);
+  Future<_Mask> mask(String asset) async => cache[asset] ??= await _load(asset);
 
   test('every driver has hold of the machine and overlaps it', () async {
     final report = StringBuffer();

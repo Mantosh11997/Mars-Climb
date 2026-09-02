@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'palette.dart';
 import '../game/level/level.dart';
 import '../game/mars_climb_game.dart';
+import '../game/progress/economy.dart';
 
 /// End-of-run panel. Serves both outcomes: the level-complete card and
 /// every way of losing, since they show the same run summary and differ
@@ -11,11 +12,16 @@ class OutcomeOverlay extends StatelessWidget {
   const OutcomeOverlay({
     super.key,
     required this.game,
+    this.payout,
     required this.onNextLevel,
     required this.onQuit,
   });
 
   final MarsClimbGame game;
+
+  /// What the run earned. Null while it is still being worked out, and on
+  /// the very first frame of the panel.
+  final Payout? payout;
 
   /// Open a different course (used by "Next course").
   final void Function(Level level) onNextLevel;
@@ -89,6 +95,10 @@ class OutcomeOverlay extends StatelessWidget {
                   _Stat(label: 'CELLS', value: '${s.cells}'),
                 ],
               ),
+              if (payout != null && !payout!.isEmpty) ...[
+                const SizedBox(height: 18),
+                _Earnings(payout: payout!),
+              ],
               const SizedBox(height: 24),
               // Winning offers the next course first; losing offers a
               // retry first. Either way the other options stay one tap
@@ -139,6 +149,90 @@ class OutcomeOverlay extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// What the run paid, itemised.
+///
+/// Broken down rather than shown as one number, because the breakdown is
+/// what teaches the economy: you can see that finishing is worth far more
+/// than the distance, and that the first clear of a course is worth more
+/// again.
+class _Earnings extends StatelessWidget {
+  const _Earnings({required this.payout});
+
+  final Payout payout;
+
+  @override
+  Widget build(BuildContext context) {
+    final rows = <(String, int)>[
+      ('Distance', payout.distance),
+      if (payout.cans > 0) ('Fuel cans', payout.cans),
+      if (payout.finish > 0) ('Course cleared', payout.finish),
+      if (payout.firstClear > 0) ('First clear', payout.firstClear),
+    ];
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      decoration: BoxDecoration(
+        color: Palette.accent.withOpacity(0.10),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Palette.accent.withOpacity(0.35)),
+      ),
+      child: Column(
+        children: [
+          for (final (label, amount) in rows)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Row(
+                children: [
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      color: Palette.inkMuted,
+                      fontSize: 12,
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    '+$amount',
+                    style: const TextStyle(
+                      color: Palette.ink,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          const Divider(height: 14, color: Palette.line),
+          Row(
+            children: [
+              const Icon(Icons.paid_rounded, size: 17, color: Palette.accent),
+              const SizedBox(width: 6),
+              const Text(
+                'EARNED',
+                style: TextStyle(
+                  color: Palette.ink,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.4,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '${payout.total}',
+                style: const TextStyle(
+                  color: Palette.accent,
+                  fontSize: 19,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

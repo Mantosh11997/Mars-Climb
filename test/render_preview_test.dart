@@ -73,8 +73,7 @@ void main() {
     final centre = (roverX / GameConfig.terrainChunkWidth).floor();
     final maxIndex =
         (level.worldEndX / GameConfig.terrainChunkWidth).ceil() - 1;
-    final first =
-        (centre - GameConfig.terrainChunksBehind).clamp(0, maxIndex);
+    final first = (centre - GameConfig.terrainChunksBehind).clamp(0, maxIndex);
     final last = (centre + GameConfig.terrainChunksAhead).clamp(0, maxIndex);
     for (var i = first; i <= last; i++) {
       TerrainChunk(index: i, generator: gen).render(canvas);
@@ -114,13 +113,13 @@ void main() {
       )
       ..restore();
 
-    final image = await recorder
-        .endRecording()
-        .toImage(width.toInt(), height.toInt());
+    final image =
+        await recorder.endRecording().toImage(width.toInt(), height.toInt());
     final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
     File(name).writeAsBytesSync(bytes!.buffer.asUint8List());
     // ignore: avoid_print
-    print('wrote $name  (chunks $first..$last, zoom ${zoom.toStringAsFixed(1)})');
+    print(
+        'wrote $name  (chunks $first..$last, zoom ${zoom.toStringAsFixed(1)})');
   }
 
   test('render previews', () async {
@@ -131,7 +130,8 @@ void main() {
     // One frame per course, so the per-level themes can be compared.
     for (final level in levels) {
       await shoot(
-        name: '$dir/theme_${level.number}_${level.theme.name.replaceAll(' ', '_')}.png',
+        name:
+            '$dir/theme_${level.number}_${level.theme.name.replaceAll(' ', '_')}.png',
         level: level,
         roverX: 150,
       );

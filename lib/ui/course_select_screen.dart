@@ -7,6 +7,7 @@ import 'game_screen.dart';
 import 'level_profile.dart';
 import 'machine_select_screen.dart';
 import 'palette.dart';
+import 'progress_scope.dart';
 import 'vehicle_preview.dart';
 
 /// Step two: pick a course, with the chosen machine carried through.
@@ -65,8 +66,10 @@ class _CourseSelectScreenState extends State<CourseSelectScreen> {
                   Expanded(
                     child: GarageHeader(
                       title: 'SELECT COURSE',
-                      subtitle: 'STEP 2  ·  ${widget.vehicle.name.toUpperCase()}',
+                      subtitle:
+                          'STEP 2  ·  ${widget.vehicle.name.toUpperCase()}',
                       onBack: () => Navigator.of(context).pop(),
+                      showWallet: true,
                     ),
                   ),
                   // A reminder of what you are driving, so you do not have
@@ -88,6 +91,12 @@ class _CourseSelectScreenState extends State<CourseSelectScreen> {
                   onPageChanged: (i) => setState(() => _index = i),
                   itemBuilder: (_, i) => _CourseCard(
                     level: levels[i],
+                    unlocked: ProgressScope.of(context)
+                        .profile
+                        .canPlay(levels[i].number),
+                    best: ProgressScope.of(context)
+                        .profile
+                        .bestOn(levels[i].number),
                     selected: i == _index,
                     onTap: () => _ctrl.animateToPage(
                       i,
@@ -104,38 +113,56 @@ class _CourseSelectScreenState extends State<CourseSelectScreen> {
                 child: SizedBox(
                   width: double.infinity,
                   height: 48,
-                  child: FilledButton(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: Palette.accent,
-                      foregroundColor: Palette.onAccent,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => GameScreen(
-                          level: _level,
-                          vehicle: widget.vehicle,
+                  child: Builder(builder: (context) {
+                    final profile = ProgressScope.of(context).profile;
+                    final open = profile.canPlay(_level.number);
+                    // The machine goes into the run already tuned, so the
+                    // physics never has to know that upgrades exist.
+                    final fitted = profile.upgradesFor(widget.vehicle.id);
+
+                    return FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: open ? Palette.accent : Palette.track,
+                        foregroundColor:
+                            open ? Palette.onAccent : Palette.inkFaint,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
                         ),
                       ),
-                    ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.play_arrow_rounded, size: 26),
-                        SizedBox(width: 8),
-                        Text(
-                          'LAUNCH',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 3,
+                      onPressed: open
+                          ? () => Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => GameScreen(
+                                    level: _level,
+                                    vehicle: widget.vehicle.tuned(fitted),
+                                    fuelMultiplier:
+                                        Vehicle.tankMultiplier(fitted),
+                                  ),
+                                ),
+                              )
+                          : null,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            open
+                                ? Icons.play_arrow_rounded
+                                : Icons.lock_rounded,
+                            size: 26,
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
+                          const SizedBox(width: 8),
+                          Text(
+                            open ? 'LAUNCH' : 'LOCKED',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 3,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
                 ),
               ),
               const SizedBox(height: 12),
@@ -150,11 +177,19 @@ class _CourseSelectScreenState extends State<CourseSelectScreen> {
 class _CourseCard extends StatelessWidget {
   const _CourseCard({
     required this.level,
+    required this.unlocked,
+    required this.best,
     required this.selected,
     required this.onTap,
   });
 
   final Level level;
+
+  /// Whether the previous course has been cleared.
+  final bool unlocked;
+
+  /// Furthest reached here, in metres. Zero if never attempted.
+  final double best;
   final bool selected;
   final VoidCallback onTap;
 
@@ -236,7 +271,61 @@ class _CourseCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                Expanded(child: LevelProfile(level: level)),
+                Expanded(
+                  child: Stack(
+                    children: [
+                      Positioned.fill(child: LevelProfile(level: level)),
+                      // A locked course still shows its silhouette and its
+                      // numbers. Hiding them would make the campaign a
+                      // corridor; showing them makes it a horizon.
+                      if (!unlocked)
+                        Positioned.fill(
+                          child: Container(
+                            color: Colors.black.withOpacity(0.45),
+                            alignment: Alignment.center,
+                            child: const Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.lock_rounded,
+                                    color: Colors.white70, size: 26),
+                                SizedBox(height: 6),
+                                Text(
+                                  'CLEAR THE PREVIOUS COURSE',
+                                  style: TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 1.4,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      else if (best > 0)
+                        Positioned(
+                          right: 10,
+                          bottom: 8,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.4),
+                              borderRadius: BorderRadius.circular(7),
+                            ),
+                            child: Text(
+                              'BEST ${best.floor()} m',
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),

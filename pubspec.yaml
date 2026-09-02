@@ -10,6 +10,10 @@ dependencies:
   flutter:
     sdk: flutter
 
+  # Saved progress: coins, unlocks, upgrades, best distances. One string
+  # key holding JSON - see game/progress/profile_store.dart.
+  shared_preferences: ^2.2.3
+
   # --- Pinned versions (these two must be kept compatible with each other) ---
   # flame 1.19.0 <-> flame_forge2d 0.18.2 <-> forge2d 0.13.1 (verified)
   flame: 1.19.0

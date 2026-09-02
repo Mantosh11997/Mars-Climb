@@ -65,5 +65,6 @@ class SeededRandom {
   SeededRandom(int seed) : _random = math.Random(seed);
   final math.Random _random;
   double next() => _random.nextDouble();
-  double range(double min, double max) => min + _random.nextDouble() * (max - min);
+  double range(double min, double max) =>
+      min + _random.nextDouble() * (max - min);
 }

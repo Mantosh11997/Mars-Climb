@@ -51,7 +51,8 @@ class Wheel extends BodyComponent {
       ..friction = vehicle.wheelFriction
       ..restitution = GameConfig.wheelRestitution
       ..filter.categoryBits = GameConfig.categoryVehicle
-      ..filter.maskBits = GameConfig.categoryTerrain | GameConfig.categoryPickup;
+      ..filter.maskBits =
+          GameConfig.categoryTerrain | GameConfig.categoryPickup;
 
     final bodyDef = BodyDef(
       type: BodyType.dynamic,

@@ -69,8 +69,7 @@ class Rover extends BodyComponent {
   bool get isInverted => uprightness <= -GameConfig.invertedDot;
 
   /// True once the rover has turned a full 360 without recovering.
-  bool get hasRolledOver =>
-      rollAccumulator.abs() >= GameConfig.rolloverRadians;
+  bool get hasRolledOver => rollAccumulator.abs() >= GameConfig.rolloverRadians;
 
   /// True once it has been lying on its roof past the grace period.
   bool get hasSettledInverted =>
@@ -100,8 +99,7 @@ class Rover extends BodyComponent {
     return body.linearVelocity.dot(forward);
   }
 
-  double get distanceTravelled =>
-      math.max(0, body.position.x - spawn.x);
+  double get distanceTravelled => math.max(0, body.position.x - spawn.x);
 
   @override
   Body createBody() {
@@ -116,7 +114,8 @@ class Rover extends BodyComponent {
       ..friction = GameConfig.chassisFriction
       ..restitution = GameConfig.chassisRestitution
       ..filter.categoryBits = GameConfig.categoryVehicle
-      ..filter.maskBits = GameConfig.categoryTerrain | GameConfig.categoryPickup;
+      ..filter.maskBits =
+          GameConfig.categoryTerrain | GameConfig.categoryPickup;
 
     final bodyDef = BodyDef(
       type: BodyType.dynamic,
@@ -224,8 +223,7 @@ class Rover extends BodyComponent {
   }
 
   void _weldHead() {
-    final def = WeldJointDef()
-      ..initialize(body, head.body, head.body.position);
+    final def = WeldJointDef()..initialize(body, head.body, head.body.position);
     world.createJoint(WeldJoint(def));
   }
 
@@ -267,7 +265,8 @@ class Rover extends BodyComponent {
     final v = body.linearVelocity;
     final speed = v.length;
     if (speed < 0.2) return;
-    body.applyForce(v.normalized()..scale(-vehicle.dragCoefficient * speed * speed));
+    body.applyForce(
+        v.normalized()..scale(-vehicle.dragCoefficient * speed * speed));
   }
 
   /// [torqueScale] lets reverse and braking reuse the same power curve at
@@ -276,7 +275,8 @@ class Rover extends BodyComponent {
   /// Engine torque is split across the driven wheels rather than handed to
   /// each in full - otherwise a six-wheeler would have three times the
   /// shove of a bike from the same engine.
-  void _driveAll(double speed, {double torqueScale = 1.0, double? fixedTorque}) {
+  void _driveAll(double speed,
+      {double torqueScale = 1.0, double? fixedTorque}) {
     final drivenCount = wheels.where((w) => w.mount.driven).length;
     final share = drivenCount == 0 ? 1.0 : 1.0 / drivenCount;
 

@@ -17,11 +17,17 @@ enum RunStatus {
 /// The Flutter overlays listen to this, so the widget layer never has to
 /// poke at the game loop.
 class GameState extends ChangeNotifier {
-  GameState(this.level);
+  GameState(this.level, {this.maxOxygen = GameConfig.oxygenMax})
+      : oxygen = maxOxygen,
+        _lastNotifiedOxygen = maxOxygen;
 
   Level level;
 
-  double oxygen = GameConfig.oxygenMax;
+  /// Capacity for this run. Not a constant any more: the tank upgrade buys
+  /// a bigger cell, and the bar has to be full at the start either way.
+  final double maxOxygen;
+
+  double oxygen;
   int cells = 0;
 
   /// Metres travelled from the start line, clamped to the course length.
@@ -32,8 +38,7 @@ class GameState extends ChangeNotifier {
   bool get isOver => status != RunStatus.running;
   bool get hasWon => status == RunStatus.finished;
 
-  double get oxygenFraction =>
-      (oxygen / GameConfig.oxygenMax).clamp(0.0, 1.0);
+  double get oxygenFraction => (oxygen / maxOxygen).clamp(0.0, 1.0);
 
   /// 0 at the start line, 1 at the finish.
   double get progress => (distance / level.finishX).clamp(0.0, 1.0);
@@ -63,8 +68,8 @@ class GameState extends ChangeNotifier {
 
   void reset({Level? level}) {
     if (level != null) this.level = level;
-    oxygen = GameConfig.oxygenMax;
-    _lastNotifiedOxygen = GameConfig.oxygenMax;
+    oxygen = maxOxygen;
+    _lastNotifiedOxygen = maxOxygen;
     cells = 0;
     distance = 0;
     speed = 0;
@@ -72,11 +77,11 @@ class GameState extends ChangeNotifier {
     notifyListeners();
   }
 
-  double _lastNotifiedOxygen = GameConfig.oxygenMax;
+  double _lastNotifiedOxygen;
 
   void drain(double amount) {
     if (isOver) return;
-    oxygen = (oxygen - amount).clamp(0.0, GameConfig.oxygenMax);
+    oxygen = (oxygen - amount).clamp(0.0, maxOxygen);
     if (oxygen <= 0) {
       status = RunStatus.outOfOxygen;
       notifyListeners();
@@ -92,8 +97,7 @@ class GameState extends ChangeNotifier {
   void collectCell() {
     if (isOver) return;
     cells += 1;
-    oxygen = (oxygen + GameConfig.oxygenPerCell)
-        .clamp(0.0, GameConfig.oxygenMax);
+    oxygen = (oxygen + GameConfig.oxygenPerCell).clamp(0.0, maxOxygen);
     notifyListeners();
   }
 
