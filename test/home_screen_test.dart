@@ -59,8 +59,11 @@ void main() {
       const PlayerProfile(completedLevels: {1, 3}),
     );
 
+    // The button's own subtitle, not just the name anywhere on screen -
+    // the UP NEXT panel names the same course, so a loose match would pass
+    // on that alone even if PLAY pointed somewhere else.
     expect(
-      find.textContaining(levels[1].name),
+      find.text('${levels[1].name}  ·  ${rover.name}'),
       findsOneWidget,
       reason: 'the unfinished course between two cleared ones is next',
     );
@@ -75,7 +78,7 @@ void main() {
     );
 
     expect(tester.takeException(), isNull);
-    expect(find.textContaining(rover.name), findsOneWidget);
+    expect(find.textContaining('·  ${rover.name}'), findsOneWidget);
     expect(find.textContaining('Stilt'), findsNothing);
   });
 
@@ -88,6 +91,6 @@ void main() {
       ),
     );
 
-    expect(find.textContaining(scout.name), findsOneWidget);
+    expect(find.textContaining('·  ${scout.name}'), findsOneWidget);
   });
 }
