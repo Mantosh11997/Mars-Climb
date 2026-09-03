@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(flutter analyze)",
+      "Bash(flutter analyze *)",
+      "Bash(flutter test)",
+      "Bash(flutter test --exclude-tags=preview)",
+      "Bash(flutter pub deps *)",
+      "Bash(flutter --version)",
+      "Bash(dart --version)",
+      "mcp__github__actions_list",
+      "mcp__github__actions_get",
+      "mcp__github__get_job_logs"
+    ]
+  }
+}
