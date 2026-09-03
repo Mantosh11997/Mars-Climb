@@ -33,16 +33,21 @@ class MarsClimbApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Mars Climb',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData.light(useMaterial3: true).copyWith(
-        scaffoldBackgroundColor: Palette.pageGradient.first,
-        colorScheme: ColorScheme.fromSeed(seedColor: GameConfig.accent),
-      ),
-      home: ProgressScope(
-        store: store,
-        child: const MachineSelectScreen(),
+    // ABOVE MaterialApp, not at `home`. Dialogs, bottom sheets and every
+    // pushed screen are routes on MaterialApp's own Navigator, so they are
+    // siblings of `home` rather than its descendants. A scope at `home`
+    // is visible to the first screen and invisible to everything opened on
+    // top of it - which looks like a plain grey box in a release build.
+    return ProgressScope(
+      store: store,
+      child: MaterialApp(
+        title: 'Mars Climb',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData.light(useMaterial3: true).copyWith(
+          scaffoldBackgroundColor: Palette.pageGradient.first,
+          colorScheme: ColorScheme.fromSeed(seedColor: GameConfig.accent),
+        ),
+        home: const MachineSelectScreen(),
       ),
     );
   }
