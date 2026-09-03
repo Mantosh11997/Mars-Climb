@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../build_info.dart';
-
 import '../game/vehicle/vehicle.dart';
 import 'coin_badge.dart';
 import 'palette.dart';
@@ -49,12 +47,16 @@ class _MachineSelectScreenState extends State<MachineSelectScreen> {
         child: SafeArea(
           child: Column(
             children: [
-              const _Header(
-                title: 'MARS CLIMB',
-                subtitle: 'STEP 1  ·  SELECT MACHINE',
-                // Only on the first screen: enough to tell one APK from
-                // another, small enough to ignore while playing.
-                trailing: 'BUILD $buildId',
+              _Header(
+                title: 'GARAGE',
+                // Says where you are in the rail and how much of it is
+                // yours, so the screen answers "how far through this am I"
+                // without a separate progress panel.
+                subtitle: 'MACHINE ${_index + 1} OF ${vehicles.length}'
+                    '  ·  ${ProgressScope.of(context).profile.ownedCount} OWNED',
+                onBack: Navigator.of(context).canPop()
+                    ? () => Navigator.of(context).pop()
+                    : null,
                 showWallet: true,
               ),
               Expanded(
@@ -78,16 +80,23 @@ class _MachineSelectScreenState extends State<MachineSelectScreen> {
               _Dots(count: vehicles.length, index: _index),
               Padding(
                 padding: const EdgeInsets.fromLTRB(26, 8, 26, 0),
-                child: Text(
-                  _vehicle.tagline,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Palette.inkMuted,
-                    fontSize: 12,
-                    fontStyle: FontStyle.italic,
-                  ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        _vehicle.tagline,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Palette.inkMuted,
+                          fontSize: 12,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    const _NextUnlock(),
+                  ],
                 ),
               ),
               const SizedBox(height: 10),
@@ -227,6 +236,61 @@ class _ActionRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// The cheapest machine you cannot afford yet, and how far off it is.
+///
+/// Nineteen machines is a long rail to scroll before the prices tell you
+/// anything, so the screen names the next realistic purchase itself. Draws
+/// nothing at all once everything is owned rather than showing an empty
+/// slot - there is no goal left to advertise.
+class _NextUnlock extends StatelessWidget {
+  const _NextUnlock();
+
+  @override
+  Widget build(BuildContext context) {
+    final profile = ProgressScope.of(context).profile;
+
+    Vehicle? target;
+    for (final v in vehicles) {
+      if (profile.owns(v.id)) continue;
+      if (target == null || v.price < target.price) target = v;
+    }
+    if (target == null) return const SizedBox.shrink();
+
+    final short = target.price - profile.coins;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: Palette.surface,
+        borderRadius: BorderRadius.circular(11),
+        border: Border.all(color: Palette.line),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            short <= 0 ? Icons.lock_open_rounded : Icons.lock_rounded,
+            size: 13,
+            color: short <= 0 ? Palette.accent : Palette.inkFaint,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            short <= 0
+                ? 'NEXT: ${target.name.toUpperCase()}  ·  AFFORDABLE'
+                : 'NEXT: ${target.name.toUpperCase()}  ·  $short TO GO',
+            style: const TextStyle(
+              color: Palette.inkMuted,
+              fontSize: 10,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.1,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

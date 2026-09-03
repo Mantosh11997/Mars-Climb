@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'game/config.dart';
 import 'game/progress/profile_store.dart';
 import 'game/vehicle/vehicle.dart';
-import 'ui/machine_select_screen.dart';
+import 'ui/home_screen.dart';
 import 'ui/palette.dart';
 import 'ui/progress_scope.dart';
 
@@ -18,8 +18,9 @@ Future<void> main() async {
   ]);
   await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
-  // Read the save before the first frame. The garage cannot be drawn
-  // honestly without it - every card needs to know whether it is owned.
+  // Read the save before the first frame. Neither screen can be drawn
+  // honestly without it - the home screen counts what you have cleared,
+  // and every garage card needs to know whether it is owned.
   final store = ProfileStore(starterVehicleId: rover.id);
   await store.load();
 
@@ -47,7 +48,7 @@ class MarsClimbApp extends StatelessWidget {
           scaffoldBackgroundColor: Palette.pageGradient.first,
           colorScheme: ColorScheme.fromSeed(seedColor: GameConfig.accent),
         ),
-        home: const MachineSelectScreen(),
+        home: const HomeScreen(),
       ),
     );
   }

@@ -12,6 +12,7 @@ class PlayerProfile {
     this.completedLevels = const {},
     this.bestDistance = const {},
     this.upgrades = const {},
+    this.lastVehicleId,
   });
 
   /// A fresh player: the starter machine, no money, nothing cleared.
@@ -35,6 +36,11 @@ class PlayerProfile {
   /// Fitted parts, per vehicle id. Absent means nothing fitted.
   final Map<String, Upgrades> upgrades;
 
+  /// The machine last taken out. Lets the home screen's PLAY button pick up
+  /// where you left off instead of dumping you back at the top of the
+  /// carousel every time.
+  final String? lastVehicleId;
+
   Upgrades upgradesFor(String vehicleId) =>
       upgrades[vehicleId] ?? Upgrades.none;
 
@@ -52,12 +58,38 @@ class PlayerProfile {
 
   double bestOn(int levelNumber) => bestDistance[levelNumber] ?? 0;
 
+  // --- what the home screen shows -------------------------------------
+
+  int get clearedCount => completedLevels.length;
+
+  int get ownedCount => ownedVehicles.length;
+
+  /// Every course's furthest run, added up. A single number for "how much
+  /// of this game have I actually driven".
+  double get totalDistance =>
+      bestDistance.values.fold(0.0, (sum, d) => sum + d);
+
+  /// The first course not yet cleared - where PLAY should send you.
+  ///
+  /// Scans from the bottom rather than taking the highest cleared plus one,
+  /// so a gap (cleared 1 and 3, failed 2) sends you back to 2 rather than
+  /// past it.
+  int nextLevelNumber(int courseCount) {
+    for (var n = 1; n <= courseCount; n++) {
+      if (!hasCompleted(n)) return n;
+    }
+    return courseCount; // everything cleared: sit on the last one
+  }
+
+  bool get hasFinishedCampaign => completedLevels.isNotEmpty;
+
   PlayerProfile copyWith({
     int? coins,
     Set<String>? ownedVehicles,
     Set<int>? completedLevels,
     Map<int, double>? bestDistance,
     Map<String, Upgrades>? upgrades,
+    String? lastVehicleId,
   }) =>
       PlayerProfile(
         coins: coins ?? this.coins,
@@ -65,6 +97,7 @@ class PlayerProfile {
         completedLevels: completedLevels ?? this.completedLevels,
         bestDistance: bestDistance ?? this.bestDistance,
         upgrades: upgrades ?? this.upgrades,
+        lastVehicleId: lastVehicleId ?? this.lastVehicleId,
       );
 
   PlayerProfile withCoins(int delta) =>
@@ -75,6 +108,8 @@ class PlayerProfile {
 
   PlayerProfile withUpgrades(String vehicleId, Upgrades fitted) =>
       copyWith(upgrades: {...upgrades, vehicleId: fitted});
+
+  PlayerProfile withLastVehicle(String id) => copyWith(lastVehicleId: id);
 
   /// Record the outcome of a run. Distance only ever moves up.
   PlayerProfile withRun({
@@ -104,6 +139,7 @@ class PlayerProfile {
         'completed': completedLevels.toList()..sort(),
         'best': bestDistance.map((k, v) => MapEntry('$k', v)),
         'upgrades': upgrades.map((k, v) => MapEntry(k, v.toJson())),
+        if (lastVehicleId != null) 'lastVehicle': lastVehicleId,
       };
 
   /// Rebuild a profile from a decoded save.
@@ -126,6 +162,8 @@ class PlayerProfile {
             if (int.tryParse('${e.key}') case final n?)
               n: _num(e.value)?.toDouble() ?? 0,
         },
+        lastVehicleId:
+            json['lastVehicle'] is String ? json['lastVehicle'] as String : null,
         upgrades: {
           for (final e in _map(json['upgrades']).entries)
             if (e.value is Map)

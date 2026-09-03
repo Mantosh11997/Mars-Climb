@@ -107,6 +107,12 @@ class ProfileStore extends ChangeNotifier {
     return true;
   }
 
+  /// Remember which machine was taken out, so PLAY can offer it again.
+  void setLastVehicle(String id) {
+    if (_profile.lastVehicleId == id) return;
+    _set(_profile.withLastVehicle(id));
+  }
+
   /// Wipe everything. Used by the reset control, and by tests.
   void reset() => _set(
         PlayerProfile.fresh.normalised(starterVehicleId: starterVehicleId),

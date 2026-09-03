@@ -13,6 +13,7 @@ import 'package:mars_climb/game/progress/profile_store.dart';
 import 'package:mars_climb/game/vehicle/vehicle.dart';
 import 'package:mars_climb/ui/progress_scope.dart';
 import 'package:mars_climb/ui/course_select_screen.dart';
+import 'package:mars_climb/ui/home_screen.dart';
 import 'package:mars_climb/ui/machine_select_screen.dart';
 
 /// Both selection screens are plain Flutter, so they can be rendered and
@@ -24,9 +25,17 @@ ProfileStore _storeWith(PlayerProfile profile) {
   for (final id in profile.ownedVehicles) {
     store.buyVehicle(id, 0);
   }
+  profile.bestDistance.forEach((n, d) {
+    store.recordRun(
+      levelNumber: n,
+      distance: d,
+      finished: profile.hasCompleted(n),
+    );
+  });
   for (final n in profile.completedLevels) {
     store.recordRun(levelNumber: n, distance: 0, finished: true);
   }
+  if (profile.lastVehicleId case final id?) store.setLastVehicle(id);
   return store;
 }
 
@@ -49,11 +58,8 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         debugShowCheckedModeBanner: false,
-        theme: ThemeData.dark(useMaterial3: true).copyWith(
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: GameConfig.accent,
-            brightness: Brightness.dark,
-          ),
+        theme: ThemeData.light(useMaterial3: true).copyWith(
+          colorScheme: ColorScheme.fromSeed(seedColor: GameConfig.accent),
         ),
         // Every selection screen reads the profile for lock state and the
         // coin balance, so the preview has to stand one up. Seeding it is
@@ -97,6 +103,21 @@ void main() {
   testWidgets('render selection screens', (tester) async {
     addTearDown(tester.view.reset);
     for (final size in const [Size(920, 430), Size(1180, 540)]) {
+      await shoot(
+        tester,
+        'home',
+        const HomeScreen(),
+        size,
+        // Mid-campaign, so the stat tiles and the PLAY subtitle have
+        // something to say rather than reading as a fresh install.
+        profile: const PlayerProfile(
+          coins: 1450,
+          ownedVehicles: {'rover', 'scout'},
+          completedLevels: {1, 2, 3},
+          bestDistance: {1: 520.0, 2: 640.0, 3: 780.0, 4: 214.0},
+          lastVehicleId: 'scout',
+        ),
+      );
       await shoot(
         tester,
         'machines',
