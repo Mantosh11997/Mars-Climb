@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../audio/game_audio.dart';
+
 import 'player_profile.dart';
 import 'upgrades.dart';
 
@@ -49,6 +51,9 @@ class ProfileStore extends ChangeNotifier {
       _profile = PlayerProfile.fresh;
     }
     _profile = _profile.normalised(starterVehicleId: starterVehicleId);
+    // The saved preference is the source of truth; push it at the player
+    // now, before anything has had a chance to make a noise.
+    GameAudio.instance.setMuted(!_profile.soundOn);
     _loaded = true;
     notifyListeners();
   }
@@ -91,6 +96,7 @@ class ProfileStore extends ChangeNotifier {
   bool buyVehicle(String id, int price) {
     if (_profile.owns(id) || _profile.coins < price) return false;
     _set(_profile.withCoins(-price).withVehicle(id));
+    GameAudio.instance.play(Sfx.purchase);
     return true;
   }
 
@@ -104,7 +110,15 @@ class ProfileStore extends ChangeNotifier {
     _set(_profile
         .withCoins(-price)
         .withUpgrades(vehicleId, fitted.bumped(part)));
+    GameAudio.instance.play(Sfx.purchase);
     return true;
+  }
+
+  /// Turn the sound on or off, and remember which it was.
+  void setSound(bool on) {
+    if (_profile.soundOn == on) return;
+    GameAudio.instance.setMuted(!on);
+    _set(_profile.withSound(on));
   }
 
   /// Remember which machine was taken out, so PLAY can offer it again.

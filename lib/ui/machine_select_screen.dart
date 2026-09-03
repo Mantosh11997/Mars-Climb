@@ -8,6 +8,7 @@ import 'upgrade_sheet.dart';
 import 'course_select_screen.dart';
 import 'vehicle_preview.dart';
 import 'vehicle_stats.dart';
+import 'click.dart';
 
 /// Step one: pick a machine.
 ///
@@ -54,9 +55,11 @@ class _MachineSelectScreenState extends State<MachineSelectScreen> {
                 // without a separate progress panel.
                 subtitle: 'MACHINE ${_index + 1} OF ${vehicles.length}'
                     '  ·  ${ProgressScope.of(context).profile.ownedCount} OWNED',
-                onBack: Navigator.of(context).canPop()
-                    ? () => Navigator.of(context).pop()
-                    : null,
+                onBack: clicky(
+                  Navigator.of(context).canPop()
+                      ? () => Navigator.of(context).pop()
+                      : null,
+                ),
                 showWallet: true,
               ),
               Expanded(
@@ -141,10 +144,12 @@ class _ActionRow extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
             ),
           ),
-          onPressed: affordable
-              ? () => ProgressScope.read(context)
-                  .buyVehicle(vehicle.id, vehicle.price)
-              : null,
+          onPressed: clicky(
+            affordable
+                ? () => ProgressScope.read(context)
+                    .buyVehicle(vehicle.id, vehicle.price)
+                : null,
+          ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -182,7 +187,7 @@ class _ActionRow extends StatelessWidget {
                 borderRadius: BorderRadius.circular(16),
               ),
             ),
-            onPressed: () => UpgradeSheet.show(context, vehicle),
+            onPressed: clicky(() => UpgradeSheet.show(context, vehicle)),
             child: const Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -212,9 +217,11 @@ class _ActionRow extends StatelessWidget {
                   borderRadius: BorderRadius.circular(16),
                 ),
               ),
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => CourseSelectScreen(vehicle: vehicle),
+              onPressed: clicky(
+                () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => CourseSelectScreen(vehicle: vehicle),
+                  ),
                 ),
               ),
               child: const Row(

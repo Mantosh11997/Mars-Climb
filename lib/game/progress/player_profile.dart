@@ -13,6 +13,7 @@ class PlayerProfile {
     this.bestDistance = const {},
     this.upgrades = const {},
     this.lastVehicleId,
+    this.soundOn = true,
   });
 
   /// A fresh player: the starter machine, no money, nothing cleared.
@@ -40,6 +41,10 @@ class PlayerProfile {
   /// where you left off instead of dumping you back at the top of the
   /// carousel every time.
   final String? lastVehicleId;
+
+  /// Whether the game makes any noise. On by default - a game that boots
+  /// silent reads as broken rather than as considerate.
+  final bool soundOn;
 
   Upgrades upgradesFor(String vehicleId) =>
       upgrades[vehicleId] ?? Upgrades.none;
@@ -90,6 +95,7 @@ class PlayerProfile {
     Map<int, double>? bestDistance,
     Map<String, Upgrades>? upgrades,
     String? lastVehicleId,
+    bool? soundOn,
   }) =>
       PlayerProfile(
         coins: coins ?? this.coins,
@@ -98,6 +104,7 @@ class PlayerProfile {
         bestDistance: bestDistance ?? this.bestDistance,
         upgrades: upgrades ?? this.upgrades,
         lastVehicleId: lastVehicleId ?? this.lastVehicleId,
+        soundOn: soundOn ?? this.soundOn,
       );
 
   PlayerProfile withCoins(int delta) =>
@@ -110,6 +117,8 @@ class PlayerProfile {
       copyWith(upgrades: {...upgrades, vehicleId: fitted});
 
   PlayerProfile withLastVehicle(String id) => copyWith(lastVehicleId: id);
+
+  PlayerProfile withSound(bool on) => copyWith(soundOn: on);
 
   /// Record the outcome of a run. Distance only ever moves up.
   PlayerProfile withRun({
@@ -140,6 +149,7 @@ class PlayerProfile {
         'best': bestDistance.map((k, v) => MapEntry('$k', v)),
         'upgrades': upgrades.map((k, v) => MapEntry(k, v.toJson())),
         if (lastVehicleId != null) 'lastVehicle': lastVehicleId,
+        'sound': soundOn,
       };
 
   /// Rebuild a profile from a decoded save.
@@ -164,6 +174,9 @@ class PlayerProfile {
         },
         lastVehicleId:
             json['lastVehicle'] is String ? json['lastVehicle'] as String : null,
+        // Absent means on: a save written before sound existed should come
+        // back with sound, not silently muted.
+        soundOn: json['sound'] is bool ? json['sound'] as bool : true,
         upgrades: {
           for (final e in _map(json['upgrades']).entries)
             if (e.value is Map)

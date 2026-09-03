@@ -20,6 +20,15 @@ class ProgressScope extends StatefulWidget {
               _missing(context))
           .store;
 
+  /// The store if there is one, null if there is not.
+  ///
+  /// For widgets that are useful with or without saved progress. The game
+  /// itself runs standalone - a test builds it with no scope anywhere - so
+  /// anything the HUD shows has to cope with the store being absent rather
+  /// than making the game unbuildable without it.
+  static ProfileStore? maybeOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<_ProgressInherited>()?.store;
+
   /// The store without subscribing. For callbacks that only want to spend
   /// or award, and would otherwise rebuild the whole screen to do it.
   static ProfileStore read(BuildContext context) => ((context

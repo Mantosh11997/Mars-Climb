@@ -9,6 +9,7 @@ Read this before exploring; it is here so you do not have to re-derive it.
 export PATH="/opt/flutter/bin:$PATH"     # Flutter 3.24.5 lives here
 flutter analyze                          # must be clean before committing
 flutter test --exclude-tags=preview      # the asserting tests
+python3 tool/make_sounds.py              # rebuilds every file in assets/audio
 ```
 
 - **No Android SDK in this container.** `dl.google.com` is blocked by the
@@ -23,6 +24,8 @@ flutter test --exclude-tags=preview      # the asserting tests
 
 `flame 1.19.0` ↔ `flame_forge2d 0.18.2` ↔ `forge2d 0.13.1` are a verified
 set. 0.18.2 requires flame ^1.19.0; earlier pairs do not resolve.
+Audio is `audioplayers` **not** `flame_audio`, on purpose: flame_audio is
+pinned against a flame version and would drag that trio forward.
 CI pins `JAVA_VERSION: 17` and that is load-bearing — the Flutter 3.24.5
 Android template ships Gradle 8.3, which rejects Java 21.
 
@@ -30,6 +33,7 @@ Android template ships Gradle 8.3, which rejects Java 21.
 
 ```
 lib/game/
+  audio/game_audio.dart  one service, every sound, never throws
   config.dart            gravity, camera, terrain, category bits
   state/game_state.dart  the listenable run: fuel, distance, outcome
   mars_climb_game.dart   Forge2DGame; takes a Level + a (tuned) Vehicle
@@ -39,7 +43,8 @@ lib/game/
   world/                 backdrop, scenery props
   progress/              profile, economy, upgrades, store
 lib/ui/                  screens, palette, overlays
-tool/                    python sprite pipeline (alpha, sheet splitting)
+tool/                    python sprite pipeline; make_sounds.py (audio)
+assets/audio/            generated - never edit by hand, regenerate
 ```
 
 **Data, not code.** A level is a `Level` + a `LevelTheme` (+ optional
@@ -79,6 +84,19 @@ Each of these cost a debugging session. Do not undo them.
    proving nothing. Scenery placement lives in `sceneryForChunk()` so the
    preview and the streaming manager share it.
 
+9. **Sound is decoration and must never be load-bearing.** `GameAudio` is
+   off until `warmUp()` succeeds and turns itself off permanently after one
+   failure, so a widget test or a device with no audio never reaches the
+   plugin. The same rule bit the widget layer: putting `SoundToggle` in the
+   HUD with a required `ProgressScope` made the *game* unbuildable without
+   saved progress, which `terrain_streaming_test` caught. Hence
+   `ProgressScope.maybeOf`. Pinned by `test/audio_test.dart`.
+10. **A looping WAV needs whole cycles and no DC offset.** `engine.wav` is
+    generated at a length that divides evenly by its fundamental, its noise
+    windowed to zero at both cycle ends, and its mean subtracted. Miss any
+    of the three and the loop seam is a click ~56 times a second - a
+    rattle, not a click. `tool/make_sounds.py` explains each one.
+
 ## Verification workflow
 
 The preview tests write PNGs instead of asserting; **look at them**, do not
@@ -106,6 +124,9 @@ fractions produced visibly wrong wheels twice.
 - **19 machines**: 5 buggies, 7 bikes, 7 trikes. In side view a reverse
   trike's front wheels share an x, so trikes are 2-axle here; wheel counts
   above 2 mean extra *axles*.
+- **Audio**: engine loop (volume from throttle, pitch from wheel speed),
+  coin, crash, finish, fail, low-oxygen alarm, UI tap, purchase. Mute is
+  saved with the profile and toggled from the home screen and the HUD.
 - **Progression**: coins from distance/cans/finishing, machine prices,
   4 upgrade parts × 5 levels, courses gated on clearing the previous one,
   saved to `shared_preferences` as one JSON string.
@@ -124,7 +145,12 @@ fractions produced visibly wrong wheels twice.
   refinery is a yard and the arena is outdoors rather than the roofed
   spaces in the references. Background layers would improve the look more
   than better props would.
-- No audio at all.
+- **Nothing has been heard.** Every sound is synthesised by
+  `tool/make_sounds.py` and was checked numerically (peak, DC, loop seam,
+  envelope shape) because this container has no audio output. They are
+  placeholders and sound like a handheld console. Replacing one is a file
+  swap: same name, same 22050 Hz mono.
+- No music, only effects.
 
 ## House style
 

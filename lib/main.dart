@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'game/audio/game_audio.dart';
 import 'game/config.dart';
 import 'game/progress/profile_store.dart';
 import 'game/vehicle/vehicle.dart';
@@ -21,6 +22,13 @@ Future<void> main() async {
   // Read the save before the first frame. Neither screen can be drawn
   // honestly without it - the home screen counts what you have cleared,
   // and every garage card needs to know whether it is owned.
+  // Decode the clips and open the players up front. Doing it lazily made
+  // the first sound of a session late, which reads as broken rather than
+  // as slow. It cannot throw and it cannot hang - see GameAudio.warmUp.
+  await GameAudio.instance.warmUp();
+
+  // load() pushes the saved mute setting at the player, so it has to run
+  // after the warm-up or the preference is applied to nothing.
   final store = ProfileStore(starterVehicleId: rover.id);
   await store.load();
 

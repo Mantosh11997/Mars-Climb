@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'palette.dart';
+import 'sound_toggle.dart';
 import '../game/mars_climb_game.dart';
 
 /// Top-of-screen telemetry: oxygen bar, energy cells, distance, speed.
@@ -41,6 +42,11 @@ class Hud extends StatelessWidget {
                   label: 'SPEED',
                   value: '${(s.speed * 3.6).abs().round()} km/h',
                 ),
+                const SizedBox(width: 10),
+                // Also here, not just on the home screen: wanting the
+                // engine to shut up is something you discover mid-run, and
+                // quitting the course to do it is not a fix.
+                const SoundToggle(),
               ],
             ),
           );

@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flame/components.dart';
 import 'package:flame_forge2d/flame_forge2d.dart';
 
+import 'audio/game_audio.dart';
 import 'collectibles/fuel_can.dart';
 import 'config.dart';
 import 'level/finish_line.dart';
@@ -96,6 +97,8 @@ class MarsClimbGame extends Forge2DGame {
     overlays
       ..add(Overlays.hud)
       ..add(Overlays.controls);
+
+    GameAudio.instance.startEngine();
   }
 
   /// Zoom is derived from the real screen height so the same slice of world
@@ -165,6 +168,8 @@ class MarsClimbGame extends Forge2DGame {
     world.children.whereType<FinishLine>().forEach((c) => c.removeFromParent());
 
     state.reset(level: this.level);
+    _warned = false;
+    GameAudio.instance.startEngine();
     overlays
       ..remove(Overlays.gameOver)
       ..remove(Overlays.levelComplete)
@@ -196,6 +201,18 @@ class MarsClimbGame extends Forge2DGame {
     if (state.isOver) return;
     state.end(outcome);
     rover.throttle = Throttle.none;
+
+    // The motor stops before the jingle starts, or the two overlap and the
+    // engine is still running under the game-over panel.
+    GameAudio.instance.stopEngine();
+    if (outcome != RunStatus.finished) {
+      // A crash gets the impact as well as the verdict: the impact is what
+      // happened, the jingle is what it cost.
+      if (outcome != RunStatus.outOfOxygen) GameAudio.instance.play(Sfx.crash);
+      GameAudio.instance.play(Sfx.fail);
+    } else {
+      GameAudio.instance.play(Sfx.finish);
+    }
 
     overlays.remove(Overlays.controls);
     overlays.add(
@@ -266,6 +283,36 @@ class MarsClimbGame extends Forge2DGame {
       distance: roverPos.x.clamp(0.0, level.finishX),
       speed: rover.forwardSpeed,
     );
+
+    _updateEngineSound();
+  }
+
+  /// Whether the low-oxygen alarm has already sounded this run.
+  ///
+  /// Latched rather than compared each frame: the fraction hovers either
+  /// side of the threshold while you idle, and an alarm that retriggers on
+  /// every crossing is a stutter, not a warning.
+  bool _warned = false;
+
+  /// Oxygen fraction at which the alarm sounds. Low enough to mean it,
+  /// high enough to still be able to do something about it.
+  static const double _warnAt = 0.18;
+
+  void _updateEngineSound() {
+    final audio = GameAudio.instance;
+
+    // Volume follows the throttle and pitch follows the wheels, so a
+    // machine grinding up a slope is loud and low rather than merely slow.
+    final topSpeed = vehicle.topSpeedKmh / 3.6;
+    audio.setEngine(
+      load: rover.throttle == Throttle.none ? 0.0 : 1.0,
+      speed: topSpeed <= 0 ? 0 : rover.forwardSpeed.abs() / topSpeed,
+    );
+
+    if (!_warned && state.oxygenFraction <= _warnAt) {
+      _warned = true;
+      audio.play(Sfx.warning);
+    }
   }
 
   void _updateCamera(double dt, Vector2 roverPos) {
@@ -279,5 +326,18 @@ class MarsClimbGame extends Forge2DGame {
     _cameraTarget.position += (desired - _cameraTarget.position) * t;
   }
 
-  void _onCellCollected(FuelCan cell) => state.collectCell();
+  void _onCellCollected(FuelCan cell) {
+    state.collectCell();
+    GameAudio.instance.play(Sfx.coin);
+    // Topping up puts the tank back above the threshold, so the alarm is
+    // allowed to sound again if it runs down a second time.
+    if (state.oxygenFraction > _warnAt) _warned = false;
+  }
+
+  @override
+  void onRemove() {
+    // Leaving the screen must not leave a motor idling behind it.
+    GameAudio.instance.stopEngine();
+    super.onRemove();
+  }
 }
