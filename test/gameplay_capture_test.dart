@@ -16,6 +16,9 @@ import 'package:mars_climb/game/vehicle/vehicle.dart';
 import 'package:mars_climb/ui/controls.dart';
 import 'package:mars_climb/ui/hud.dart';
 import 'package:mars_climb/ui/outcome_overlay.dart';
+import 'package:mars_climb/ui/palette.dart';
+
+import 'support/test_fonts.dart';
 
 /// Records real gameplay to a folder of PNG frames.
 ///
@@ -60,6 +63,10 @@ void main() {
     ('06_cinder_cay', cinder, level11, 110),
   ];
 
+  // Without these the HUD and the controls render every label as a
+  // yellow-underlined box, and the footage looks like a placeholder.
+  setUpAll(loadRealFonts);
+
   testWidgets('record gameplay', (tester) async {
     Directory(dir).createSync(recursive: true);
 
@@ -79,18 +86,25 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           debugShowCheckedModeBanner: false,
-          home: RepaintBoundary(
-            key: key,
-            child: GameWidget<MarsClimbGame>(
-              game: game,
-              overlayBuilderMap: {
-                Overlays.hud: (_, g) => Hud(game: g),
-                Overlays.controls: (_, g) => Controls(game: g),
-                Overlays.gameOver: (_, g) =>
-                    OutcomeOverlay(game: g, onNextLevel: (_) {}, onQuit: () {}),
-                Overlays.levelComplete: (_, g) =>
-                    OutcomeOverlay(game: g, onNextLevel: (_) {}, onQuit: () {}),
-              },
+          // Scaffold, because GameScreen has one. Without a Material
+          // ancestor every HUD label is drawn as a yellow-underlined box -
+          // Flutter's "no text style here" affordance, which looks exactly
+          // like a missing font.
+          home: Scaffold(
+            backgroundColor: Palette.gameLetterbox,
+            body: RepaintBoundary(
+              key: key,
+              child: GameWidget<MarsClimbGame>(
+                game: game,
+                overlayBuilderMap: {
+                  Overlays.hud: (_, g) => Hud(game: g),
+                  Overlays.controls: (_, g) => Controls(game: g),
+                  Overlays.gameOver: (_, g) => OutcomeOverlay(
+                      game: g, onNextLevel: (_) {}, onQuit: () {}),
+                  Overlays.levelComplete: (_, g) => OutcomeOverlay(
+                      game: g, onNextLevel: (_) {}, onQuit: () {}),
+                },
+              ),
             ),
           ),
         ),

@@ -129,6 +129,12 @@ finishes loading, and physics steps without a pump never mount new terrain
 chunks - the machine drives happily to 173 m (4 x 42 m) and falls through
 the world.
 
+Store-quality stills are a third thing again - real fonts, 1920x1080:
+
+```bash
+flutter test --tags capture test/screenshot_test.dart --dart-define=SHOT_DIR=$D
+```
+
 - `render_preview_test` → one frame per level (`theme_N_*.png`)
 - `garage_preview_test` → all machines with wheels + driver fitted
 - `screens_preview_test` → the selection screens
@@ -178,6 +184,21 @@ fractions produced visibly wrong wheels twice.
   placeholders and sound like a handheld console. Replacing one is a file
   swap: same name, same 22050 Hz mono.
 - No music, only effects.
+
+12. **A widget test has no fonts and no Material.** Both bite only when
+    you *look* at the output, which is why they survived so long. Ahem
+    draws every glyph as a box: `test/support/test_fonts.dart` loads the
+    Roboto and MaterialIcons that Flutter already ships in its artifact
+    cache (no download, no committed asset). Separately, a `Text` with no
+    Material ancestor is drawn as a yellow-underlined box, which looks
+    identical to a missing font - `GameWidget` needs the same `Scaffold`
+    `GameScreen` gives it. Only for renders; never for layout assertions,
+    which should stay on Ahem's stable metrics.
+13. **Screenshot at 2x density, not at 2x size.** These screens are laid
+    out for a landscape phone with fixed type sizes. 1920x1080 *logical*
+    strands the design in empty background; 960x540 logical at
+    `devicePixelRatio: 2` is what a phone actually does. `toImage` also
+    needs `pixelRatio:` passed or it hands back the logical size.
 
 ## House style
 
