@@ -123,7 +123,9 @@ jobs:
       # than asserting anything.
       - name: Test
         id: test
-        run: flutter test --exclude-tags=preview
+        # Neither the preview renders nor the gameplay capture assert
+        # much; both write files and the capture takes a minute.
+        run: flutter test --exclude-tags="preview || capture"
 
       - name: Build APK
         id: build

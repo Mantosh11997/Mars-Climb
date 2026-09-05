@@ -136,6 +136,26 @@ class GameConfig {
   /// If your rover reverses into the hills, flip this to -1.
   static const double driveDirection = 1.0;
 
+  /// How fast the chassis may be rotating nose-up before the wheelie
+  /// torque stops adding to it, in rad/s.
+  ///
+  /// The wheelie torque is a constant applied every frame the throttle is
+  /// held. Without a cap nothing opposes it, so it does not pop a wheelie -
+  /// it spins the chassis, and holding the throttle on flat ground put the
+  /// starter machine through a full backflip in under a second and then
+  /// kept it rotating indefinitely. Capping the *rate* rather than the
+  /// torque keeps the lift instant and bounds where it ends up.
+  static const double maxWheelieRate = 1.9;
+
+  /// How far the nose may be lifted by the wheelie torque, in radians.
+  ///
+  /// Capping only the *rate* is not enough on its own: it stops the chassis
+  /// spinning, but the torque keeps pushing all the way round and the
+  /// machine ends up balanced on its tail at 97 degrees, going nowhere. A
+  /// wheelie is a lifted nose, so the lift is what has to be bounded.
+  /// About 34 degrees - enough to see, not enough to lose the front wheels.
+  static const double maxWheelieAngle = 0.60;
+
   /// Extra torque applied to the chassis itself while on the gas, so the
   /// nose lifts under acceleration (the classic hill-climb wheelie).
   static const double chassisPitchTorque = 34.0;

@@ -309,9 +309,7 @@ class Rover extends BodyComponent {
       case Throttle.forward:
         _driveAll(GameConfig.driveDirection * vehicle.engineMaxMotorSpeed);
         // Nose-up torque so hard acceleration pops a wheelie.
-        body.applyTorque(
-          GameConfig.driveDirection * -vehicle.chassisPitchTorque,
-        );
+        _applyPitchTorque(-vehicle.chassisPitchTorque);
 
       case Throttle.reverse:
         // Rolling forward + BRAKE == braking. Stationary or rolling
@@ -325,9 +323,7 @@ class Rover extends BodyComponent {
                 GameConfig.reverseMotorSpeedFactor,
             torqueScale: GameConfig.reverseTorqueFactor,
           );
-          body.applyTorque(
-            GameConfig.driveDirection * vehicle.chassisPitchTorque * 0.5,
-          );
+          _applyPitchTorque(vehicle.chassisPitchTorque * 0.5);
         }
 
       case Throttle.none:
@@ -336,6 +332,50 @@ class Rover extends BodyComponent {
     }
 
     _applyDrag();
+  }
+
+  /// Pitch the chassis while the throttle is held, without spinning it.
+  ///
+  /// [magnitude] is signed in chassis terms: negative lifts the nose.
+  ///
+  /// The gating is the whole point. This used to be a bare `applyTorque`
+  /// with a constant magnitude, applied on every frame the throttle was
+  /// down. A constant torque against nothing is an angular accelerator:
+  /// angular velocity climbed without limit, so holding the throttle on the
+  /// flat starting apron flipped the Pathfinder onto its back inside one
+  /// second and then kept it rotating - measured at 22 radians, three and a
+  /// half turns, after six seconds. It was worst in the air, where there is
+  /// no ground contact to argue with it at all.
+  ///
+  /// Two gates, and neither of them is a smaller torque - the lift has to
+  /// stay instant to feel like an engine rather than like a balloon:
+  ///
+  /// 1. Stop adding spin once it is already rotating that way fast enough,
+  ///    fading out as the cap is approached so the wheelie eases in rather
+  ///    than switching off mid-lift.
+  /// 2. Nothing past vertical. Beyond there "nose up" is no longer lifting
+  ///    the nose, it is driving the machine round the rest of the loop.
+  void _applyPitchTorque(double magnitude) {
+    final sign = magnitude.isNegative ? -1.0 : 1.0;
+
+    // Positive when the chassis is already turning the way this torque
+    // would take it.
+    final rate = GameConfig.driveDirection * body.angularVelocity * sign;
+    if (rate >= GameConfig.maxWheelieRate) return;
+
+    // How far it has already been pitched that way. forge2d's angle is
+    // unbounded - it counts every turn the chassis has ever made - so it
+    // has to be wrapped back into a real orientation first.
+    final pitched = GameConfig.driveDirection *
+        math.atan2(math.sin(body.angle), math.cos(body.angle)) *
+        sign;
+    if (pitched >= GameConfig.maxWheelieAngle) return;
+
+    // Fade on both, so the lift eases out at the limit instead of
+    // switching off mid-wheelie and dropping the nose.
+    final fade = (1 - rate / GameConfig.maxWheelieRate).clamp(0.0, 1.0) *
+        (1 - pitched / GameConfig.maxWheelieAngle).clamp(0.0, 1.0);
+    body.applyTorque(GameConfig.driveDirection * magnitude * fade);
   }
 
   void teardown() {

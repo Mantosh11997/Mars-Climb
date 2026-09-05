@@ -8,7 +8,7 @@ Read this before exploring; it is here so you do not have to re-derive it.
 ```bash
 export PATH="/opt/flutter/bin:$PATH"     # Flutter 3.24.5 lives here
 flutter analyze                          # must be clean before committing
-flutter test --exclude-tags=preview      # the asserting tests
+flutter test --exclude-tags="preview || capture"   # the asserting tests
 python3 tool/make_sounds.py              # rebuilds every file in assets/audio
 ```
 
@@ -97,6 +97,13 @@ Each of these cost a debugging session. Do not undo them.
     of the three and the loop seam is a click ~56 times a second - a
     rattle, not a click. `tool/make_sounds.py` explains each one.
 
+11. **`chassisPitchTorque` must stay gated.** It is applied on every frame
+    the throttle is held. As a bare constant it is an angular accelerator
+    with nothing opposing it: the starter machine flipped in under a second
+    on flat ground and kept rotating (3.5 turns in six seconds), worst in
+    the air where nothing touches the ground. `Rover._applyPitchTorque`
+    caps both the rate and the lift angle. Pinned by `test/driving_test.dart`.
+
 ## Verification workflow
 
 The preview tests write PNGs instead of asserting; **look at them**, do not
@@ -106,6 +113,21 @@ reason about them.
 D=<scratchpad>
 flutter test --tags preview --dart-define=PREVIEW_DIR=$D
 ```
+
+Gameplay is recorded rather than rendered - this is the only thing that
+drives the machines, and it is how the pitch-torque bug above was found:
+
+```bash
+flutter test --tags capture test/gameplay_capture_test.dart \
+  --dart-define=CAPTURE_DIR=$D
+python3 tool/make_clip.py $D clip.mp4     # needs pip install imageio-ffmpeg
+```
+
+Two traps in that test, both of which produced convincing wrong answers:
+`tester.pump()` must be interleaved with `runAsync` or the game never
+finishes loading, and physics steps without a pump never mount new terrain
+chunks - the machine drives happily to 173 m (4 x 42 m) and falls through
+the world.
 
 - `render_preview_test` → one frame per level (`theme_N_*.png`)
 - `garage_preview_test` → all machines with wheels + driver fitted
@@ -136,8 +158,13 @@ fractions produced visibly wrong wheels twice.
 
 ## Known gaps — say these plainly, do not paper over them
 
-- **Nothing has been playtested.** Every handling and economy number is
-  reasoned, not driven.
+- **Handling is barely playtested.** The capture test is the only thing
+  that has ever driven a machine, and it found one real bug. Economy
+  numbers are still purely reasoned.
+- **Holding full throttle from a standstill still tips the starter machine
+  onto its back** on flat ground. The runaway spin is fixed; the flip is
+  not. It needs `engineMaxTorque` / `chassisPitchTorque` retuned across the
+  roster, which is a balance decision, not a bug fix.
 - `prospector` and `vesper` sheets cannot be split — wheels drawn attached
   to the body. They need regenerating.
 - `compass_body.png` has a blue background bloom.
